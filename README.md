@@ -1,10 +1,12 @@
 # Ribogate Web deployment archive
 
-**Original work by Nicholas (Nick) Kamel, Kharma Lab, Concordia University.**
+**Original research credit: Nicholas (Nick) Kamel.**
+
+Research affiliation: Kharma Lab, Concordia University.
 
 This repository archives the existing Ribogate Flask web application, including **TriCleaver** and **TruthSeqEr**, solely to preserve the web interface and simplify future deployment. Nick's public [TriCleaver repository](https://github.com/nickkamel/TriCleaver) contains the command-line algorithm release but does not include the web application files archived here.
 
-**All credit for the original algorithms and web application belongs to Nick Kamel and the original research contributors at Kharma Lab, Concordia University. The owner of this archive claims no authorship of, or research credit for, that work.** This repository is a deployment archive, not an official upstream release.
+**Original research credit for TriCleaver and the associated Ribogate web application belongs to Nicholas (Nick) Kamel. The owner of this archive claims no authorship of, or research credit for, the original work.** This repository is a deployment archive, not an official upstream release.
 
 ## Provenance and attribution
 
