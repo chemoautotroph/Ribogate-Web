@@ -23,23 +23,22 @@ Flask routes, HTML templates, static assets, authentication, SQLite models, a ba
 
 It differs from the public TriCleaver CLI: this snapshot uses an extended hammerhead template and different reporting defaults. Do not assume its design results reproduce the CLI release. Algorithm defaults are preserved here.
 
-## Windows setup (PowerShell)
+## Reproduce on a new Windows machine
 
-Use Python 3.9, matching the supplied environment. Create and activate an isolated environment, then:
+The supported target is **Windows x64 with Python 3.9.19**. Follow the complete [installation and recovery guide](INSTALL.md), including prerequisites, exact downloads, email configuration, acceptance checks and troubleshooting.
+
+Download/clone this repository, open PowerShell in its directory, and run:
 
 ```powershell
-pip install -r requirements.txt
-$env:RIBOGATE_SECRET_KEY = 'set-a-long-random-value'
-$env:RIBOGATE_VIENNA_PATH = 'C:\path\to\ViennaRNA'
-python create_db.py
-python runserver.py --server-name=127.0.0.1:8000 --send-emails=false
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start.ps1
 ```
 
-Open http://127.0.0.1:8000/signup to create your own account, log in, then visit `/TC`. Email is disabled by default; new accounts are confirmed locally. No account or password is shipped.
+Setup downloads and verifies a [pinned portable CPython 3.9.19 runtime](python-manifest.json) (no existing Python, Conda or administrator installation needed), creates an isolated environment, installs [hash-locked packages](requirements.lock), downloads and verifies [the four exact customized ViennaRNA binaries](vienna-manifest.json) from Nick's commit-pinned upstream repository, initializes private configuration/database, and runs a small real TriCleaver job through result export and restart verification. No manual copying from the original machine is required.
 
-The customized `RNAFold.exe`, `RNACofold.exe`, `RNAFold300.exe`, and `RNACofold300.exe` must exist at `RIBOGATE_VIENNA_PATH`. The upstream CLI repository documents and supplies these customized binaries; normal ViennaRNA binaries may not provide the console probability output expected here. Binaries are not included in this archive.
+Open http://127.0.0.1:8000/signup, create your own account and log in. No account, password, email API key or historical user data is shipped. For email, add your own verified sender and provider key to the private `.env` as described in [INSTALL.md](INSTALL.md#4-email-provide-your-keys-privately). `.env` is loaded automatically; process environment variables override it.
 
-Set `RIBOGATE_PORT` to change the port and include the same port in `--server-name`. Environment variables are documented in `.env.example`; that file is documentation and is not automatically loaded. For email, configure sender and service keys explicitly and enable `--send-emails=true`.
+Normal runs retain the original 300-individual / 200-generation configuration. Setup verification uses 8 individuals / 4 generations, actual folding executables and a temporary database. The reproduced target is the **TriCleaver web workflow**; legacy TruthSeqEr source is included, with its unfinished presentation routes documented in the installation guide. Algorithm randomness means installation reproducibility is not a promise of identical design sequences on every run.
 
 ## Packaging changes and exclusions
 
@@ -48,9 +47,14 @@ Set `RIBOGATE_PORT` to change the port and include the same port in `--server-na
 - Converted nonportable local wheel paths to package version pins.
 - Excluded user databases, sessions, historical jobs, pickle data, logs, generated outputs, caches, IDE artifacts and thesis PDFs.
 - Fixed an undefined email body variable in the SMTP2GO branch.
+- Added persistent configuration, automatic table initialization, provider selection/validation and absolute job-completion links.
+- Added exact upstream executable URLs/checksums, hash-locked dependencies, Windows setup/start scripts and isolated end-to-end verification.
+- Corrected deployment blockers in job retention imports and EA insertion/final-status bookkeeping; made worker count configurable without changing scientific defaults.
+- Restored missing version-matched theme images and font fallback; [third-party sources and notices](docs/THIRD_PARTY.md) are recorded separately.
+- Replaced an unavailable landing-page background image reference with a CSS gradient; all research algorithm defaults remain unchanged.
 
 Original local data is not part of this repository. Back up databases separately and privately. Run the server as a single application process: its scheduler starts inside that process, and running multiple copies can duplicate scheduling. Internet deployment requires a separate review of authentication, authorization, CSRF protection and deployment architecture; the bundled development server should be used for local access.
 
 ## Validation scope
 
-Source compilation and clean-database web smoke checks are performed during packaging. Full scientific design runs, outbound email, BLAST and production hosting are not validated by this archive.
+See [the recorded validation](docs/VALIDATION.md). A clean Python environment passed actual folding, signup/login, a queued quick TriCleaver run, results/structure data, Excel export and restart persistence. Email adapters, confirmation and password reset are verified with mocked delivery. Full-size scientific runs, actual inbox delivery, visual browser rendering, unfinished TS presentation routes, BLAST and production hosting are outside this acceptance test.

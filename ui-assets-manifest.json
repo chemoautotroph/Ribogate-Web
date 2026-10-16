@@ -1,0 +1,77 @@
+[
+  {
+    "path": "WS/static/ui-lightness/images/ui-bg_diagonals-thick_18_b81900_40x40.png",
+    "url": "https://code.jquery.com/ui/1.9.2/themes/ui-lightness/images/ui-bg_diagonals-thick_18_b81900_40x40.png",
+    "sha256": "739e6023b3767ffaec0102f2b89818c984b87c771d1bef16c7626ca64c968329"
+  },
+  {
+    "path": "WS/static/ui-lightness/images/ui-bg_diagonals-thick_20_666666_40x40.png",
+    "url": "https://code.jquery.com/ui/1.9.2/themes/ui-lightness/images/ui-bg_diagonals-thick_20_666666_40x40.png",
+    "sha256": "26d009d09ea27a9e08717c252c6451e473faf3fdabff911e6726c7d143a7afc1"
+  },
+  {
+    "path": "WS/static/ui-lightness/images/ui-bg_flat_10_000000_40x100.png",
+    "url": "https://code.jquery.com/ui/1.9.2/themes/ui-lightness/images/ui-bg_flat_10_000000_40x100.png",
+    "sha256": "0e1ac198171a7efb4e331b0aa097a8aa1d4ebdbade5b29c4861bb422f95f1be7"
+  },
+  {
+    "path": "WS/static/ui-lightness/images/ui-bg_glass_100_f6f6f6_1x400.png",
+    "url": "https://code.jquery.com/ui/1.9.2/themes/ui-lightness/images/ui-bg_glass_100_f6f6f6_1x400.png",
+    "sha256": "29205b2d198ce4eed569d38a5ce0a55ef27a0c8e643473c375d623ced7d24ca8"
+  },
+  {
+    "path": "WS/static/ui-lightness/images/ui-bg_glass_100_fdf5ce_1x400.png",
+    "url": "https://code.jquery.com/ui/1.9.2/themes/ui-lightness/images/ui-bg_glass_100_fdf5ce_1x400.png",
+    "sha256": "f88e1b423d5b2de7044f448bb83dfc1324b8132da3c589157e349e9125f9fbca"
+  },
+  {
+    "path": "WS/static/ui-lightness/images/ui-bg_glass_65_ffffff_1x400.png",
+    "url": "https://code.jquery.com/ui/1.9.2/themes/ui-lightness/images/ui-bg_glass_65_ffffff_1x400.png",
+    "sha256": "f0e6cd91b837d5c5644d026e5ffeccd907953317cd5c0f689901733afda260b2"
+  },
+  {
+    "path": "WS/static/ui-lightness/images/ui-bg_gloss-wave_35_f6a828_500x100.png",
+    "url": "https://code.jquery.com/ui/1.9.2/themes/ui-lightness/images/ui-bg_gloss-wave_35_f6a828_500x100.png",
+    "sha256": "2aa19a6b7b63f81542cbf7cf17d06f80b2b103f3e4ecec2540d2704b0b366c52"
+  },
+  {
+    "path": "WS/static/ui-lightness/images/ui-bg_highlight-soft_100_eeeeee_1x100.png",
+    "url": "https://code.jquery.com/ui/1.9.2/themes/ui-lightness/images/ui-bg_highlight-soft_100_eeeeee_1x100.png",
+    "sha256": "41ff65fb4f9b6f2fa9c9d025c2e9b0c9e09a2aee6f32266d19ee93c8af4dacbf"
+  },
+  {
+    "path": "WS/static/ui-lightness/images/ui-bg_highlight-soft_75_ffe45c_1x100.png",
+    "url": "https://code.jquery.com/ui/1.9.2/themes/ui-lightness/images/ui-bg_highlight-soft_75_ffe45c_1x100.png",
+    "sha256": "1e1cfb209f291f1ebe33adf0301d27f03089d77db5a59d2288c54cde5d044973"
+  },
+  {
+    "path": "WS/static/ui-lightness/images/ui-icons_222222_256x240.png",
+    "url": "https://code.jquery.com/ui/1.9.2/themes/ui-lightness/images/ui-icons_222222_256x240.png",
+    "sha256": "a2ccfdc001858222885a9df39200840ac7a3f479ba889727d32a10398db7918a"
+  },
+  {
+    "path": "WS/static/ui-lightness/images/ui-icons_228ef1_256x240.png",
+    "url": "https://code.jquery.com/ui/1.9.2/themes/ui-lightness/images/ui-icons_228ef1_256x240.png",
+    "sha256": "7fcb45b214701ac9a13209fc351800f108a05a860b12fd9b785bdb22536313a2"
+  },
+  {
+    "path": "WS/static/ui-lightness/images/ui-icons_ef8c08_256x240.png",
+    "url": "https://code.jquery.com/ui/1.9.2/themes/ui-lightness/images/ui-icons_ef8c08_256x240.png",
+    "sha256": "8fb54f7bc96ce47cf75c1978a2958f69973fc382a40b049f68bf8bebc839a853"
+  },
+  {
+    "path": "WS/static/ui-lightness/images/ui-icons_ffd27a_256x240.png",
+    "url": "https://code.jquery.com/ui/1.9.2/themes/ui-lightness/images/ui-icons_ffd27a_256x240.png",
+    "sha256": "760d0ee1bd1bfcb2a4532706edcd34dfe7313789d16cf6dbc28705e139096fb0"
+  },
+  {
+    "path": "WS/static/ui-lightness/images/ui-icons_ffffff_256x240.png",
+    "url": "https://code.jquery.com/ui/1.9.2/themes/ui-lightness/images/ui-icons_ffffff_256x240.png",
+    "sha256": "5481ff09a63fde681b23c842a9acd3181b6998dc711f675c529f028dd3020ad5"
+  },
+  {
+    "path": "WS/static/fonts/glyphicons-halflings-regular.woff2",
+    "url": "https://raw.githubusercontent.com/twbs/bootstrap/v3.4.1/dist/fonts/glyphicons-halflings-regular.woff2",
+    "sha256": "fe185d11a49676890d47bb783312a0cda5a44c4039214094e7957b4c040ef11c"
+  }
+]

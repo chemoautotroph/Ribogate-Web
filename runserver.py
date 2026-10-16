@@ -1,5 +1,7 @@
 import os
 import argparse
+from pathlib import Path
+from runtime import ROOT, DATA_DIR
 from WS import app, start_scheduler
 
 import logging
@@ -18,7 +20,7 @@ def str2bool(v):
 
 #TO DO. Clean this up once I'm confident it works consistently.
 def setup_loggers():
-    file_handler = logging.FileHandler('server_logs.txt')
+    file_handler = logging.FileHandler(DATA_DIR / 'server_logs.txt')
     file_handler.setLevel(logging.INFO)
     file_handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
 
@@ -58,21 +60,23 @@ def setup_loggers():
         #Add it to the Flask app's logger
         app.logger.addHandler(email_handler)
 
-if __name__ == '__main__':
+def configure_app(argv=None):
     parser = argparse.ArgumentParser(description="Run the Flask server.")
-    parser.add_argument('--server-name', type=str, required=True) #This needs to be set for the scheduler to be able to general url link 
-    parser.add_argument('--send-emails', type=str2bool, required=False, default=False) 
+    parser.add_argument('--server-name', type=str, default=os.environ.get('RIBOGATE_SERVER_NAME', '127.0.0.1:' + os.environ.get('RIBOGATE_PORT', '8000')))
+    parser.add_argument('--send-emails', type=str2bool, default=str2bool(os.environ.get('RIBOGATE_SEND_EMAILS', 'false')))
+    parser.add_argument('--num-processes', type=int, default=int(os.environ.get('RIBOGATE_NUM_PROCESSES', min(os.cpu_count() or 1, 12))))
     parser.add_argument('--quick-ea', type=str2bool, required=False, default=False) 
     parser.add_argument('--store-jobs-days', type=int, required=False, default=-1) 
     parser.add_argument('--max-num-user-jobs', type=int, required=False, default=1) 
     parser.add_argument('--min-temp', type=float, required=False, default=20) 
     parser.add_argument('--max-temp', type=float, required=False, default=80) 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
+    if args.num_processes < 1:
+        parser.error('--num-processes must be at least 1')
     app.config['SERVER_NAME'] = args.server_name 
     app.config['QUICK_EA'] = args.quick_ea #Runs the EA with a very small nubmer of individuals and generations. It won't generate any useful designs but it makes debugging much quicker.
     app.config['STORE_JOBS_DAYS'] = args.store_jobs_days #How many days the job will remain in database before being deleted. -1 means jobs are never deleted.
     app.config['MAX_NUM_USER_JOBS'] = args.max_num_user_jobs  #How many jobs a single user can have simultaneously queued/running
-    app.config['MAX_NUM_USER_JOBS'] = 2 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Hardocded CLI override. Temporary.
     app.config['MIN_TEMP'] = args.min_temp
     app.config['MAX_TEMP'] = args.max_temp
 
@@ -98,6 +102,7 @@ if __name__ == '__main__':
     app.config['ADMIN_EMAIL'] = os.environ.get('RIBOGATE_ADMIN_EMAIL', '')
     #app.config['EMAIL_ERROR_LOGS'] = True #If True emails error logs to admin
     app.config['EMAIL_ERROR_LOGS'] = False
+    app.config['PREFERRED_URL_SCHEME'] = os.environ.get('RIBOGATE_URL_SCHEME', 'http')
     app.config['VIENNA_PATH'] = os.environ.get('RIBOGATE_VIENNA_PATH', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'vienna_rna_binaries'))
     app.config['PERFORM_BLAST'] = False
     app.config['BLAST_DB_PATH'] = os.environ.get('RIBOGATE_BLAST_DB_PATH', '')
@@ -120,7 +125,7 @@ if __name__ == '__main__':
     app.config['VERBOSE_SEG_NAMES'] = {'S1A': '1st half of stem 1', 'S1B': '2nd half of stem 1', 'S2A': '1st half of stem 2', 'S2B': '2nd half of stem 2', 'S3A': '1st half of stem 3', 'S3B': '2nd half of stem 3', 'C1': '1st part of core', 'C2': '2nd part of core', 'C3': '3rd part of core', 'L0': '1st linker', 'L1': '2nd linker', 'SENSOR': 'sensor', 'UPSTREAM_RZBS': 'region upstream of RzBS', 'DOWNSTREAM_RZBS': 'region downstream of RzBS', 'S0A': "1st half of stem 1", 'S0B': "2nd half of stem 1", 'S1KNOT': "1st part of pseudoknot", 'S2KNOT': "2nd part of pseudoknot"}
 
     app.config['FAST_FOLDING'] = 1
-    app.config['NUM_PROCESSES'] = 12
+    app.config['NUM_PROCESSES'] = args.num_processes
 
     app.config['MAX_MUTANT_WT_DIFFERENCE'] = 20
 
@@ -157,6 +162,18 @@ if __name__ == '__main__':
     cassette_segment_sequences['promoter'] = "GAATTTAATACGACTCACTATA" #An appropriate number of Gs will be dynamically added once the ribozyme sequence is known
     app.config['CASSETTE_SEGMENT_SEQUENCES'] = cassette_segment_sequences
 
+    return app
+
+
+def main():
+    configure_app()
+    from scripts.install_vienna import verify_binaries
+    verify_binaries(Path(app.config['VIENNA_PATH']))
+    from WS.email import validate_email_config
+    validate_email_config()
+    from WS import db
+    with app.app_context():
+        db.create_all()
     setup_loggers()
     start_scheduler()
     app.run(host=os.environ.get('RIBOGATE_HOST', '127.0.0.1'), port=int(os.environ.get('RIBOGATE_PORT', '8000')))
@@ -165,3 +182,7 @@ if __name__ == '__main__':
     #app.config["CUSTOM_URL_NAME"] = args.server_name
     #app.config['SERVER_NAME'] = 'localhost:7000'
     #app.run(host='0.0.0.0', port=7000)
+
+
+if __name__ == '__main__':
+    main()

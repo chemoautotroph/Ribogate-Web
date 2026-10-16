@@ -90,7 +90,7 @@ class TruthSeqEr(EA):
 
         common_data   = (ind.base_to_seg, ind.name_to_bases, self.extension_region_seg_ids, self.truth_vector, self.num_inputs, bool_300, self.folding_temp, self.bool_l_segments, app.config['VIENNA_PATH'])
 
-        num_processes = 12 #16
+        num_processes = app.config['NUM_PROCESSES']
         self.num_processes_novelty = num_processes
         results = multicore(batch, pheno_perf_fits, num_processes, common_data)
         #results = pheno_perf_fits([batch, common_data]) #Single core

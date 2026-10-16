@@ -250,7 +250,7 @@ class TriCleaver(EA):
         #Kharma wanted me to fold the SRzs on their own. This is not used as part of the EA loop. It is only used to visualize the sRz on its own on the web app. 
         common_data = (self.folding_temp, 1, app.config['VIENNA_PATH'])
         batch = [[ind.strands[0], '.'*len(ind.strands[0])] for ind in self.population]
-        results = multicore(batch, server_fold, 12, common_data)
+        results = multicore(batch, server_fold, app.config['NUM_PROCESSES'], common_data)
         for idx, result in enumerate(results):
             self.population[idx].mfe_db_srz_only = result[0]
 

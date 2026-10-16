@@ -1,0 +1,11 @@
+{
+  "implementation": "CPython",
+  "version": "3.9.19",
+  "architecture": "x86_64-pc-windows-msvc-shared",
+  "distribution": "astral-sh/python-build-standalone",
+  "release": "20240726",
+  "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20240726/cpython-3.9.19%2B20240726-x86_64-pc-windows-msvc-shared-install_only_stripped.tar.gz",
+  "sha256_url": "https://github.com/astral-sh/python-build-standalone/releases/download/20240726/cpython-3.9.19%2B20240726-x86_64-pc-windows-msvc-shared-install_only_stripped.tar.gz.sha256",
+  "size": 21843994,
+  "sha256": "db39a9da42deccdbada78ab3c39fa4d0b1e8957c3cc73447bf400386e0bfb3cc"
+}

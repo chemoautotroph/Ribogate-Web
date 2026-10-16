@@ -165,7 +165,7 @@ class EA():
             rows.append(row)
 
         #if self.cur_gen % self.insertion_rate == 0 or self.cur_gen == (self.num_gens - 1):
-        if (self.cur_gen + 1) % self.insertion_rate == 0 or self.cur_gen == 0 or self.cur_gen == self.num_gen - 1: #Always insert first and last generations:
+        if (self.cur_gen + 1) % self.insertion_rate == 0 or self.cur_gen == 0 or self.cur_gen == self.num_gens - 1: #Always insert first and last generations:
             insert_individuals_db(rows, bool_overwrite, insertion_rate)
 
 
@@ -195,6 +195,7 @@ class EA():
         self.bool_store = bool_store
         self.cur_gen = 0
         self.job_id = job_id
+        status = get_job_status(self.job_id)
 
         if self.parent_selection_method == 2:
             self.num_tournament_participants = int(parent_selection_params[0]) #in this case selection_params is a list of a single number

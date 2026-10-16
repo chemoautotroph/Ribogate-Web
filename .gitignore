@@ -1,6 +1,7 @@
 __pycache__/
 *.py[cod]
 .venv/
+.python/
 .env
 .env.*
 !.env.example
@@ -17,3 +18,8 @@ server_logs.txt
 .vs/
 obj/
 vienna_rna_binaries/*.exe
+vienna_rna_binaries/*.download
+smoke-test-report.json
+*.egg-info/
+wheelhouse/
+dist/

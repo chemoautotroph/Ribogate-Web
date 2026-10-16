@@ -1,0 +1,35 @@
+{
+  "upstream_repository": "https://github.com/nickkamel/TriCleaver",
+  "upstream_commit": "443b4f4f7d3f961d3b86a7e764fc9721c34fe591",
+  "platform": "Windows x86-64 (executables may also run under Windows WOW64)",
+  "files": [
+    {
+      "name": "RNAFold.exe",
+      "url": "https://raw.githubusercontent.com/nickkamel/TriCleaver/443b4f4f7d3f961d3b86a7e764fc9721c34fe591/vienna_rna_binaries/RNAFold.exe",
+      "size": 1440979,
+      "sha256": "d1cb85135056ab2d15f2939dc535b6078e255c78f3241d318f6720732faea263",
+      "git_blob_sha1": "89c38e160bdfe7a3b196f3e64d3bf25d19763e10"
+    },
+    {
+      "name": "RNACofold.exe",
+      "url": "https://raw.githubusercontent.com/nickkamel/TriCleaver/443b4f4f7d3f961d3b86a7e764fc9721c34fe591/vienna_rna_binaries/RNACofold.exe",
+      "size": 1430224,
+      "sha256": "d856a1cf64cd41890548054d7ee41e0a613e700735128b645bba4d8b8ad7fbcb",
+      "git_blob_sha1": "e144976f8f88b90320527c4fc8a33432f1545da5"
+    },
+    {
+      "name": "RNAFold300.exe",
+      "url": "https://raw.githubusercontent.com/nickkamel/TriCleaver/443b4f4f7d3f961d3b86a7e764fc9721c34fe591/vienna_rna_binaries/RNAFold300.exe",
+      "size": 1441491,
+      "sha256": "05e73eb2b663c449ca01cdcbc8f0f33a39279b1808592145e346e88f2f8a08ff",
+      "git_blob_sha1": "2222ac03570bb71c9f2e065bfbc302482e7a416a"
+    },
+    {
+      "name": "RNACofold300.exe",
+      "url": "https://raw.githubusercontent.com/nickkamel/TriCleaver/443b4f4f7d3f961d3b86a7e764fc9721c34fe591/vienna_rna_binaries/RNACofold300.exe",
+      "size": 1430736,
+      "sha256": "ccf89c802974c0582f13d0d1ee4b71319e42ba25b9d493f283a7b37d1129aac3",
+      "git_blob_sha1": "944ff5e71131c33bdeeae26487ddbe53a3903f3c"
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+# Keep published artifact-lock checksums independent of Windows checkout settings.
+requirements*.lock text eol=lf

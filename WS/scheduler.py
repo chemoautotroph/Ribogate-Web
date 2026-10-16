@@ -1,4 +1,5 @@
 import traceback
+from datetime import datetime, timedelta
 from WS import db, app
 from WS.models import Jobs, Individuals, User
 from sqlalchemy import and_, or_
@@ -20,7 +21,7 @@ def print_jobs():
 
 def send_job_completion_email(job):
     #job_url = app.config["CUSTOM_URL_NAME"] + url_for("Server.TC_job_details", id=job.id, _external=False) #Use this for Concordia server
-    job_url = url_for("Server.TC_job_details", id=job.id)
+    job_url = url_for("Server." + job.type + "_job_details", id=job.id, _external=True)
     job_user = User.query.filter(User.id == job.user_id).first()
     recipient_email = str(job_user.email)
     subject = 'Your Ribogate TriCleaver job is complete!'

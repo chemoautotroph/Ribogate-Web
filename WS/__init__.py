@@ -1,12 +1,12 @@
 import os
-import secrets
+from runtime import DATA_DIR, secret_key
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 import threading
 
-app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('RIBOGATE_SECRET_KEY') or secrets.token_hex(32)
+app = Flask(__name__, instance_path=str(DATA_DIR))
+app.config['SECRET_KEY'] = secret_key()
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -18,6 +18,7 @@ db.init_app(app)
 from flask import Flask, session
 from flask_session import Session
 SESSION_TYPE = 'filesystem'
+SESSION_FILE_DIR = str(DATA_DIR / 'sessions')
 app.config.from_object(__name__)
 Session(app)
 

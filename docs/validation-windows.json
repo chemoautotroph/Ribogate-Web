@@ -1,0 +1,16 @@
+{
+  "timestamp_utc": "2026-10-16T20:16:29.964009+00:00",
+  "python": "3.9.19",
+  "platform": "Windows-10-10.0.19045-SP0",
+  "mail_sent": false,
+  "checks": [
+    "All four downloaded executables produced parseable structures and BPPMs",
+    "Signup, login, CSRF-validated two-step TC submission and scheduler completion",
+    "Nonempty results, structure HTML/JSON/state changes, static assets and valid XLSX export",
+    "Server restart preserves user, completed job and downloadable results"
+  ],
+  "passed": true,
+  "vienna_upstream_commit": "443b4f4f7d3f961d3b86a7e764fc9721c34fe591",
+  "tc_debug_results": 8,
+  "installation": "Default PowerShell bootstrap; downloaded pinned standalone CPython; fresh venv and data directory; source path containing spaces"
+}
