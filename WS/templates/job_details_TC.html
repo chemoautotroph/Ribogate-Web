@@ -1,0 +1,317 @@
+﻿{% extends "base.html" %}
+
+{% block content %}
+
+<!DOCTYPE html>
+<html lang="">
+<head>
+    <style type="text/css">
+        div.results {
+            float: left;
+            width: 25% overflow: hidden;
+            padding: 10px;
+        }
+
+        #overview {
+            word-break: break-word;
+            float-left;
+            width: 750px; /*This is key*/
+            overflow: hidden;
+            padding: 10px;
+            border-collapse: collapse;
+        }
+
+        #coarseGrained {
+            float: left;
+            width: 20%;
+        }
+
+        /*table style*/
+        #truth {
+            /*font-family: Arial, Helvetica, sans-serif;*/
+            border-collapse: collapse;
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        #truth td, #truth th {
+            border: 1px solid #ddd;
+            padding: 0px;
+        }
+
+        #truth tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        #truth tr:hover {
+            background-color: #ddd;
+        }
+
+        #truth th {
+            padding-top: 12px;
+            padding-bottom: 12px;
+            text-align: left;
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .segment {
+            display: inline; /* Inline so that each colored span doesn't wrap indepedently */
+        }
+
+    </style>
+
+    <meta charset="utf-8">
+    <title>{{ title }}</title>
+</head>
+
+
+<body class="bg-light">
+    <div class="container body-content" role="main">
+        <h1 class="my-3">Job details</h1>
+        <div id="app">
+
+            <!-- Job parameter summary -->
+            <div class="card my-3 box-shadow">
+                <div class="card-body">
+                    <label for="advancedSettings" class="showMore card-title border-bottom border-gray pb-2" data-expand-text="Job parameters (click to expand)" data-collapse-text="Job parameters  (click to collapse)">
+                        <!-- <h5 class="card-title border-bottom border-gray pb-2">Request information</h5> -->
+                        <h5><span class="toggleText"></span></h5>
+                    </label>
+                    <input id="advancedSettings" type="checkbox"><!-- advancedSettings is the name of collapse functionality element-->
+                    <div>
+                        <dl class="row mb-0">
+                            <dt class="col-md-2">Job Id            </dt>
+                            <dd class="col-md-10">{{id}}</dd>
+                            <dt class="col-md-2">Temperature (℃)  </dt>
+                            <dd class="col-md-10">{{temperature}}</dd>
+                            <dt class="col-md-2">Created           </dt>
+                            <dd class="col-md-10">{{date}}</dd>
+                            <dt class="col-md-2">Wild-type sequence</dt>
+                            <dd class="col-md-10">
+                                <textarea rows="4" cols="80" readonly="readonly" class="form-control">{{wt_seq}}</textarea>
+                            </dd>
+                            <dt class="col-md-2">Mutant sequence</dt>
+                            <dd class="col-md-10">
+                                <textarea rows="4" cols="80" readonly="readonly" class="form-control">{{mutant_seq}}</textarea>
+                            </dd>
+                        </dl>
+
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Progress bar -->
+            <div class="card my-3 box-shadow">
+                <div class="card-body">
+                    <h5 class="card-title">Progress</h5>
+                    <div class="progress" style="height: 30px;"><div role="progressbar" class="progress-bar" aria-valuemin="0" aria-valuemax="100" aria-valuenow=""></div></div>
+                </div>
+            </div>
+
+            <!-- Results section -->
+            <!-- By default this is hidden. It is only shown once the EA job has completed -->
+            <div class="card my-3 box-shadow" id="designs" hidden="true">
+                <div class="card-body">
+                    <div class="clearfix">
+                        <h5 class="card-title float-md-left">Designs</h5> <div id="showFilterOptions" class="float-md-right mb-2">
+
+                            <!-- CSV download button -->
+                            <form action="/csv">
+                                <input type="hidden" name="id" value="{{id}}" /> <!-- https://stackoverflow.com/questions/732371/what-happens-if-the-action-field-in-a-form-has-parameters-->
+                                <button id="btn_download" class="btn btn-sm btn-primary">
+                                    <svg class="svg-inline--fa fa-download fa-w-16" aria-hidden="true" data-prefix="fas" data-icon="download" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg="">
+                                        <path fill="currentColor" d="M216 0h80c13.3 0 24 10.7 24 24v168h87.7c17.8 0 26.7 21.5 14.1 34.1L269.7 378.3c-7.5 7.5-19.8 7.5-27.3 0L90.1 226.1c-12.6-12.6-3.7-34.1 14.1-34.1H192V24c0-13.3 10.7-24 24-24zm296 376v112c0 13.3-10.7 24-24 24H24c-13.3 0-24-10.7-24-24V376c0-13.3 10.7-24 24-24h146.7l49 49c20.1 20.1 52.5 20.1 72.6 0l49-49H488c13.3 0 24 10.7 24 24zm-124 88c0-11-9-20-20-20s-20 9-20 20 9 20 20 20 20-9 20-20zm64 0c0-11-9-20-20-20s-20 9-20 20 9 20 20 20 20-9 20-20z"></path>
+                                    </svg><!-- <i class="fas fa-download"></i> --> Download
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Table of designed sequences -->
+                        <div class="resultsTable">
+                            <div>
+                                <br/><input type="checkbox" id="toggleCheckbox"> Show advanced results
+                            </div>
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th> <div class="d-flex align-items-center sortable">     Rank    </div>  </th>
+
+                                        <!-- <th> <div class="d-flex align-items-center wrap-text" id="cassetteLegend">  {{rz_column_title | safe}}   </div> </th> -->
+                                        <!-- ><th> <div class="d-flex align-items-center wrap-text" id="cassetteLegend"></div> </th> -->
+                                        <th> <div class="align-items-center wrap-text" id="cassetteLegend"></div> </th> <!-- d-flex had to be removed to get the legend to wrap properly-->
+
+                                        <th> <div class="d-flex align-items-center">  Cut region  </div> </th>
+                                        <th> <div class="d-flex align-items-center">  Structures  </div> </th>
+
+                                        <th class="advanced-column" style="display: none;"> <div class="d-flex align-items-center">Activity score</div> </th>
+                                        <th class="advanced-column" style="display: none;"> <div class="d-flex align-items-center">Inactivity score</div> </th>
+                                        <th class="advanced-column" style="display: none;"> <div class="d-flex align-items-center">Novelty score</div> </th>
+                                        <th class="advanced-column" style="display: none;"> <div class="d-flex align-items-center">Mismatch score</div> </th>
+
+                                    </tr>
+                                </thead>
+                                <tbody id="recordTableRows"> <!-- Set dynamically by the JS script-->
+                                </tbody>
+                            </table>
+                        </div>
+
+
+                        <!-- Pagination hyperlinks -->
+                        <div id="pagination">
+                        </div>
+
+                    </div>                       
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+<script type='text/javascript'>
+
+function createColoredString(segments) {
+    stringHTML = '';
+    segments.forEach(segment => {
+        stringHTML += '<span class="segment" style=" color: ' + segment.color + ';">' + segment.text + '</span>'; 
+    });
+    return stringHTML;
+}
+
+/* Creates page buttons
+ * We always show the following buttons: the first, the last, the current, and a neighborhood around the current
+ * If the first page (0) is outside the neighborhood of the current page, then we add an ellipsis (...)
+ * Same for last page */
+function createPagination(pageNum, totalPages) {
+    const displayRange = 8;
+    const lastPageIndex = totalPages-1;
+    let paginationHTML = '<ul class="pagination mb-0">';
+            
+    //If lowest neighbor page button is greater than 0, we explicitly add the 0 button and an ellipsis (...) after it
+    if (pageNum - displayRange > 0 ) {       
+        paginationHTML += '<li class="page-item"><a href="#" onclick="sendPageRequest(0); return false;" class="page-link">0</a></li>';
+        paginationHTML += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+    }
+            
+    const lowerBound = pageNum - displayRange > 0 ? pageNum - displayRange : 0;
+    const upperBound = pageNum + displayRange < lastPageIndex ? pageNum + displayRange : lastPageIndex;
+
+    //Iterate through all pages, and add the current page button and those near it
+    for (let pageBtnNum = 0; pageBtnNum < totalPages; pageBtnNum++) {
+        if (pageBtnNum >= lowerBound && pageBtnNum <= upperBound) { //show all page numbers near the current page
+            if (pageBtnNum === pageNum) { //Set the current page to an active state
+                paginationHTML += `<li class="page-item active"><span class="page-link">${pageBtnNum}</span></li>`;
+            } else {               
+                paginationHTML += `<li class="page-item"><a href="#" onclick="sendPageRequest(${pageBtnNum}); return false;" class="page-link">${pageBtnNum}</a></li>`;
+            }
+        }
+    }
+
+    //If the highest neighbor page button is smaller than the last page index, we explicitly add the lastPageIndex button and an ellipsis (...) before it
+    if (pageNum + displayRange < lastPageIndex) {
+        paginationHTML += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+        paginationHTML += `<li class="page-item"><a href="#" onclick="sendPageRequest(${lastPageIndex}); return false;" class="page-link">${lastPageIndex}</a></li>`;
+    }
+    paginationHTML += '</ul>';
+
+    document.querySelector('#pagination').innerHTML = paginationHTML;
+}
+
+function sendPageRequest(pageNum) {
+
+    //alert(pageNum);
+	$.getJSON('/TC/job_details', {
+		id: {{id}}, page_num:pageNum}, function(data){
+		updateResults(data, pageNum);
+		});
+}
+
+
+
+//Populate the tables with the records for the current page and display the pagination
+function updateResults(data, pageNum)
+{
+	var records = data[0];
+	var cassetteLegend = data[1];
+    var numPages = data[2];
+
+    $('#recordTableRows').empty();
+    records.forEach(record => {
+        let content = `                    
+            <tr class="clickable-row">
+                <td>${record.rank}</td>
+                <td>
+                    <!-- code tag makes text monospace and red by default-->
+                    <!-- <code style="word-break: break-all;">${record.sequence}</code> -->
+
+                    <code id="sequenceCol" style="word-break: break-all;">${createColoredString(record.sequence)}</code>
+
+                </td>
+                <td><code style="word-break: break-all;">${record.cutRegion}</code></td>
+                <td><a role="button" class="btn btn-primary" href="${record.link}" target="_blank">View</a></td>
+
+                <td class="advanced-column" style="display: none;">${record.onScore}</td>
+                <td class="advanced-column" style="display: none;">${record.offScore}</td>
+                <td class="advanced-column" style="display: none;">${record.noveltyScore}</td>
+                <td class="advanced-column" style="display: none;">${record.mismatchScore}</td>
+            </tr>`;
+        $('#recordTableRows').append(content);
+    });
+
+    $('#cassetteLegend').html(createColoredString(cassetteLegend));
+
+    createPagination(pageNum, numPages);
+
+    //Trigger the listener to set the initial state (it doesn't actually toggle the checkbox though)
+    document.getElementById('toggleCheckbox').dispatchEvent(new Event('change'));
+}
+
+
+var progress = {{progress}}
+progress_percent = progress*100
+$('.progress-bar').css('width', progress_percent +'%').attr('aria-valuenow', progress_percent)
+$('.progress-bar').text(progress_percent+'%')
+
+//While the EA is running, refresh the page every 5 seconds to show progress bar update. TO DO: AJAX update is cleaner and avoids page refresh.
+if (progress < 1)
+{    setTimeout(function(){
+        window.location.reload(1);
+    }, 5000);
+}
+else
+{
+    $("#designs").attr("hidden", false); //When the EA is complete, set the results table to visible
+
+    //Initial JSON call to get the first page (0) records
+    sendPageRequest(0);
+
+    //Event listener for the "Show advanced data checkbox"
+    document.getElementById('toggleCheckbox').addEventListener('change', function() {
+        const advancedColumns = document.querySelectorAll('.advanced-column');
+        advancedColumns.forEach(column => {
+            if (this.checked) {
+                column.style.display = '';
+            } else {
+                column.style.display = 'none';
+            }
+        });
+    });
+
+
+
+
+
+
+}
+
+</script>
+
+</html>
+
+
+{% endblock %}
+
+
+
+

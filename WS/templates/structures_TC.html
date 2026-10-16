@@ -1,0 +1,246 @@
+﻿{% extends "base.html" %}
+
+{%block imports%}
+<script src="{{ url_for('static', filename = 'scripts/fornac_NK.js') }}"></script>
+<link href="{{ url_for('static', filename = 'styles/fornac_NK.css')}}" rel="stylesheet">
+
+<link href="{{ url_for('static', filename = 'styles/vendor.css')}}" rel="stylesheet">
+<link href="{{ url_for('static', filename = 'ui-lightness/jquery-ui.css')}}" rel="stylesheet">
+
+<script type="text/javascript" src="{{ url_for('static', filename = 'scripts/vendor.js')}}"></script>
+<!-- main.js, taken from ribosoft contains some forna functions that I think overwrite fornac.js-->
+<!-- However, main.js also contains functionality for navbar expansion/collapse -->
+<!-- Therefore I took main.js and pasted it into console inspector to make it readable and I commented out the forna parts-->
+<!-- <script type="text/javascript" src="{{ url_for('static', filename = 'scripts/main.js')}}"></script> -->
+<script type="text/javascript" src="{{ url_for('static', filename = 'scripts/main_NK.js')}}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename = 'scripts/jquery-1.11.0.min.js')}}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename = 'scripts/jquery-ui.js')}}"></script>
+
+
+<style>
+	/*Without this, I lose the table when I shrink the window width*/
+	body {
+		min-width: 1400px;
+	}
+
+	.test {
+		display: flex;
+	}
+
+		.test > div {
+			box-sizing: border-box;
+			/*overflow-x: auto; */
+		}
+
+		.test > .d-flex {
+			gap: 20px; /* spacing between the truth table and the forna structure */
+		}
+
+	.wrap-text {
+		display: block;
+		max-width: 350px;
+		white-space: normal;
+		word-wrap: break-word;
+	}
+</style>
+
+
+{%endblock%}
+
+{% block forna %}
+
+<meta charset="utf-8">
+
+<title>{{ title }}</title>
+
+</br>
+<!-- <div class="container body-content" role="main"> -->
+<div>
+	<!-- <div id="app"> -->
+	<div class="test d-flex flex-column align-items-center">
+
+		<h1 class="my-3">Predicted secondary structures</h1>
+
+		<div class="d-flex justify-content-center">
+
+			<div class="table table-hover">
+				<table id="truth-table"></table></br>
+				<span id="ribozyme-header"></span>
+				<span id="ribozyme-seq" class="wrap-text"></span></br>
+				<span id="cut-site-header"></span>
+				<span id="cut-site-seq" class="wrap-text"></span></br>
+				<span>Color legend</span></br>
+				<span id="color_legend" class="wrap-text"></span>
+			</div>
+
+
+			<div id="cofold_ss" style="max-width: 800px">
+			</div>
+		</div>
+	</div>
+</div>
+
+
+{% endblock %}
+
+
+	{% block script %}
+
+<script type='text/javascript'>
+var ind_id = {{ ind_id}};
+var gen   = {{ gen   }};
+var job = {{ job }};
+$('#IndId').text(ind_id)
+
+var prevState = 0;
+var state = 0;
+
+//Initialize
+$.getJSON('/structures_JSON', {
+	state:0, ind_id:ind_id, job: job, gen:gen, sub_app:"TC"}, function(data){
+	updateResults(data);
+	});
+
+
+
+function updateResults(data)
+{
+	var geno = data[0];
+	var pheno = data[1];
+	var constraintsVienna = data[2];
+	var colorString = data[3];
+	var stateNames = data[4];
+	var outputStates = data[5];
+	var markedCutRegion = data[6];
+	var segments = data[7];
+	const subAppName = data[8];
+
+	//$('#Geno').text(geno)
+	var geno_split = geno.split("&");
+	$('#ribozyme-seq').text(geno_split[0]);
+
+	var stateHeader; 
+	var outputHeader;
+	if (subAppName == 'TC')	{
+		$('#ribozyme-header').text("SRz sequence: ");
+		$('#cut-site-header').text("Cut-site sequence:");
+		$('#cut-site-seq').text(markedCutRegion);
+		stateHeader = "Hybridization states";
+		outputHeader = "Cleavage?";
+	}
+	else if (subAppName == 'TS')
+    {
+		$('#ribozyme-header').text("Ribogate sequence: ");
+		stateHeader = "Input state";
+		outputHeader = "Output state";
+    }
+
+	$('#Pheno').text(pheno)
+	$('#Constraints').text(constraintsVienna)
+
+	var seq_ = geno.replace("&amp;","&");
+	var secondaryStructure_ = pheno.replace("&amp;", "&");
+	cofoldContainer(secondaryStructure_, seq_, "#cofold_ss", colorString, segments);
+
+	updateTruthTable(stateNames, outputStates, stateHeader, outputHeader)
+}
+
+//Determines whether black or white has the best contrast against a background color
+function getContrastingBlackOrWhite(hexcolor) {
+  //Convert hex to rgb
+  hexcolor = hexcolor.replace("#", "");
+  const r = parseInt(hexcolor.substr(0, 2), 16);
+  const g = parseInt(hexcolor.substr(2, 2), 16);
+  const b = parseInt(hexcolor.substr(4, 2), 16);
+
+  //Calculate the luminance of the rgb color and return black if it is above 50% of max value (255)
+  const luminance =  0.2126*r + 0.7152*g + 0.0722*b;
+  return (luminance >= 128) ? 'black' : 'white';
+}
+
+function buildColorLegend(segments) {
+	let htmlStr = "";
+	segments.forEach((segment, index) => {
+		const bgColor = segment.color;
+		const textColor = getContrastingBlackOrWhite(bgColor);
+		// Append to the HTML string with text in contrasting color and background in the appropriate color
+		htmlStr += (index > 0 ? " - " : "") + `<span style="color: ${textColor}; background-color: ${bgColor};">${segment.name}</span>`;
+	});
+	document.getElementById("color_legend").innerHTML = htmlStr;
+}
+
+"use strict"
+function cofoldContainer(secondaryStructure,seq, divName, color_string, segments) {
+
+    var container = new fornac.FornaContainer(divName, {'applyForce': true, 'allowPanningAndZooming': true, 'initialSize':[800, 800]}); //[750,750]
+    var options = {'structure': secondaryStructure, 'sequence': seq };
+    container.addRNA(options.structure, options);
+    container.setSize();
+	container.calculateStrandStarts(); //This is an ugly function hacked together by me which is required for two strands to have different color schemes
+	container.addCustomColorsText(color_string);
+
+	buildColorLegend(segments); //This shows the name of each segment over a background rectangle that is the same color as the nucleotides of the segment in the FORNA structure
+	}
+
+function updateTruthTable(stateNames, outputStates, stateHeader, outputHeader)
+{
+	var table = document.getElementById("truth-table");
+
+	//Elimate previous table if there is one
+	table.deleteTHead();
+	numRowsToDelete = table.rows.length
+	for(var j=0; j< numRowsToDelete;j++)
+	{
+		table.deleteRow(0);
+	}
+
+	//Create Table
+	for(var i=0; i< (stateNames.length);i++)
+	{
+		var row = table.insertRow(i);
+		var newCell = row.insertCell(0);
+		newCell.innerHTML = stateNames[i];
+		newCell = row.insertCell(1);
+		newCell.innerHTML = outputStates[i];
+
+		//Create radio button
+		var radioCell = row.insertCell(2)
+		var x = document.createElement("input");
+		x.setAttribute("type", "radio");
+		x.setAttribute("name", "stateSel");
+		x.setAttribute("value", i);
+		if (i == prevState)
+		{
+			x.setAttribute("checked", true);
+		}
+		radioCell.appendChild(x);
+	}
+
+	//Create header
+	var header = table.createTHead();
+	var row = header.insertRow(0);
+	var newCell = row.insertCell(0);
+	newCell.innerHTML = stateHeader; 
+	newCell = row.insertCell(1);
+	newCell.innerHTML = outputHeader; 
+	newCell = row.insertCell(2);
+	newCell.innerHTML = "View state";
+}
+
+
+$("body").on("change", 'input[type=radio][name=stateSel]', function(){
+		state = $('input[name=stateSel]:checked').val();
+		prevState = state; //Used just for esthetic purposes so the dynamically created check box button remains checked
+
+		$.getJSON('/structures_JSON', {
+			state:state, ind_id:ind_id, job: job, gen:gen, sub_app:"TC"}, function(data){
+			updateResults(data);
+			});
+	});
+</script>
+
+{% endblock %}
+
+
+
+

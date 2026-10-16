@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="container body-content" role="main">
+        <h1 class="title"> Welcome to <b>RIBOGATE</b> </h1>
+        <h2> A web service for designing switchable ribozymes </h2>
+        Please select one of the two applications below.
+
+        <div class="wrapper">
+            <div>
+                TruthSeqEr: Design ribozyme-based logic gates implementing a target Boolean function.<br /><br />
+                <form action="/TS" method="get">
+                    <input type="submit" value="Launch TruthSeq-Er" class="btn btn-primary btn-block" id="Launch_TS">
+                </form>
+            </div>
+            <div>
+                TriCleaver: Design selective ribozymes targeting transcripts associated with trinucleotide repeat disorders.<br /><br />
+                <form action="/TC" method="get">
+                    <input type="submit" value="Launch TriCleaver" class="btn btn-primary btn-block" id="Launch_TC">
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block script %}
+<style>
+    .wrapper {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-column-gap: 1em;
+    }
+
+    .wrapper > div {
+        background: #eee;
+        padding:1em;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,284 @@
+﻿{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+    .step {
+        /*display: none;*/ /* NK I commented this out becomes display:none messes up scrollheight which we use for collapsing. This doesn't seem to break the step code though*/
+    }
+
+    .inVitro-inline-flex {
+        display: inline-flex;
+        align-items: center;
+    }
+
+    #customPromoterContainer {
+        margin-left: 10px;
+    }
+
+</style>
+
+<div class="container body-content" role="main">
+    <h1 class="my-3">Create a new TriCleaver request</h1>
+
+    <div id="app">
+        <form action='/TC/process_submission' method="post">
+            <input type="hidden" name="client_step" value="{{step}}">
+
+            {{ form.hidden_tag() }}
+
+            {% set ns = namespace(has_error=False) %}
+            {% for field in form %}
+            {% if field.errors %}
+            {% set ns.has_error = True %}
+            {% endif %}
+            {% endfor %}
+
+            {% if ns.has_error %}
+            <div role="alert" class="alert alert-danger box-shadow">
+                <h5 class="alert-heading">
+                    <svg aria-hidden="true" data-prefix="fas" data-icon="exclamation-triangle" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" data-fa-i2svg="" class="svg-inline--fa fa-exclamation-triangle fa-w-18 mr-1">
+                        <path fill="currentColor" d="M569.517 440.013C587.975 472.007 564.806 512 527.94 512H48.054c-36.937 0-59.999-40.055-41.577-71.987L246.423 23.985c18.467-32.009 64.72-31.951 83.154 0l239.94 416.028zM288 354c-25.405 0-46 20.595-46 46s20.595 46 46 46 46-20.595 46-46-20.595-46-46-46zm-43.673-165.346l7.418 136c.347 6.364 5.609 11.346 11.982 11.346h48.546c6.373 0 11.635-4.982 11.982-11.346l7.418-136c.375-6.874-5.098-12.654-11.982-12.654h-63.383c-6.884 0-12.356 5.78-11.981 12.654z"></path>
+                    </svg> Some errors were encountered
+                </h5>
+                <p class="mb-0 mt-3"></p> <p class="mb-0 mt-3">
+                    {% for field in form %}
+                    {% for error in field.errors %}
+                    {{ field.label.text }}: {{ error }}
+                    <br />
+                    {% endfor %}
+                    {% endfor %}
+                </p>
+            </div>
+            {% endif %}
+
+            <div id="step1" class="step">
+                <div class="my-3 p-3 bg-white rounded box-shadow">
+                    <h6 class="border-bottom border-gray pb-2">Target sequences</h6>                    
+                    <span>Please enter the sequences of the wild-type and mutant strands of the trinucleotide repeat disorder you wish to target. </span>
+                    <br /><span>These sequences must respect the following criteria: </span>
+                    <br /><br />
+                    <ul>
+                        <li>For both the mutant and wild-type, put a dash (-) on each side of the region of the substrate where the repeats occur</li>
+                        <li>The region upstream of the repeats must be the same in both strands.</li>
+                        <li>The region downstream of the repeats must be the same in both strands.</li>
+                        <li>The number repeats in the wild-type strand must be smaller than the number of repeats in the mutant strand.</li>
+                        <li>There must be at least 5 repeats in the wild-type strand.</li>
+                    </ul>
+
+                    <div class="form-group">
+                        <label for="wild-type">Wild-type sequence:</label>
+                        <!--- <textarea class="form-control" id="wild-type" name="wt_field"></textarea> -->
+                        {{ form.wt_field(rows=7, class="form-control", id="wild-type_sequence") }}
+                        {% if form.wt_field.errors %}
+                        {% for error in form.wt_field.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="mutant">Mutant sequence:</label>
+                        <!-- <textarea class="form-control" id="mutant" name="mutant_field"></textarea> -->
+                        {{ form.mutant_field(rows=7, class="form-control", id="mutant_field") }}
+                        {% if form.mutant_field.errors %}
+                        {% for error in form.mutant_field.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+
+                <button type="submit" name="action" value="submit" onclick="document.getElementsByName('client_step')[0].value='1'" class="btn btn-primary btn-block" id="btn_step2">Go to Step 2</button>
+            </div>
+
+            <div id="step2" class="step">
+                <div class="my-3 p-3 bg-white rounded box-shadow">
+                    <h6 class="border-bottom border-gray pb-2">
+                        Extracted transcript properties
+                    </h6>
+
+                    <span>Repeat type (most common): {{repeat_unit}}</span><br />
+                    <span>Number of repeats in the wild-type strand: {{num_repeats_wt}}</span><br />
+                    <span>Number of repeats in the mutant strand: {{num_repeats_mutant}}</span><br />
+                    <span>Number of potential cut sites (in both the wild-type and repeat strands): {{num_cut_sites}}</span><br />
+                </div>
+
+
+                <div class="my-3 p-3 bg-white rounded box-shadow">
+                    <h6 class="border-bottom border-gray pb-2">
+                        Environmental properties
+                        <span data-toggle="tooltip" data-placement="right" title="Test"><i class="fas fa-question-circle text-info"></i></span>
+                    </h6>
+
+                    <div class="form-group" id="temperatureFormGroup">
+                        {{ form.temperature_field.label }}
+                        {{ form.temperature_field(class="form-control", style="width: 80px;", value=form.temperature_field.default) }}
+                    </div>
+                </div>
+
+                <!-- Target environment-->
+                <div class="my-3 p-3 bg-white rounded box-shadow">
+                    <h6 class="border-bottom border-gray pb-2">{{ form.target_environment.label }}</h6>
+
+                    <div class="form-group mt-2">
+                        {% for subfield in form.target_environment %}
+                        <div class="form-check form-check-inline">
+                            {{ subfield(class="mr-2") }} <!-- Add margin to the right of the radio button -->
+                            <label class="form-check-label" for="{{ subfield.id }}">{{ subfield.label.text|safe }}</label>
+                        </div>
+                        {% endfor %}
+                        {% for error in form.target_environment.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+
+                    <!-- In Vitro Options -->
+                    <div id="inVitroOptions" style="display: none;" class="form-group mt-2">
+                        <span class="border-bottom border-gray pb-2 d-block">{{ form.in_vitro_option.label|safe }}</span>
+
+                        <!-- Radio buttons -->
+                        {% for subfield in form.in_vitro_option %}
+                        <div class="form-check form-check-inline inVitro-inline-flex">
+                            {{ subfield(class="mr-2") }} <!-- Add margin to the right of the radio button -->
+                            <label class="form-check-label" for="{{ subfield.id }}">{{ subfield.label.text|safe }}</label>
+
+                            <!-- If this is the third option (custom promoter), include the textbox inside the container
+                                This is done  so that the radio button and textbox always appear in the same line if we resize window -->
+                            {% if loop.index == 3 %}
+                            <div id="customPromoterContainer">
+                                {{ form.custom_promoter_text }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+
+                        <!-- Error messages for in_vitro_option -->
+                        <div class="w-100">
+                            {% for error in form.in_vitro_option.errors %}
+                            <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Error messages for custom_promoter_text -->
+                        <div class="w-100">
+                            {% for error in form.custom_promoter_text.errors %}
+                            <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- In Vivo Options -->
+                    <div id="inVivoOptions" style="display: none;" class="form-group">
+                        <span class="border-bottom border-gray pb-2 d-block">{{ form.in_vivo_option.label|safe }}</span>
+
+                        <!-- {{ form.in_vivo_option.label }} -->
+                        {% for subfield in form.in_vivo_option %}
+                        <div class="form-check form-check-inline">
+                            {{ subfield(class="mr-2") }} <!-- Add margin to the right of the radio button -->
+                            <label class="form-check-label" for="{{ subfield.id }}">{{ subfield.label.text }}</label>
+                        </div>
+                        {% endfor %}
+                        {% for error in form.in_vivo_option.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Advanced options -->
+                    <div class="my-3 p-3 bg-white rounded box-shadow">
+                        <label for="advancedSettings" class="showMore border-bottom border-gray pb-2" data-expanded=true data-expand-text="Advanced settings (click to expand)" data-collapse-text="Advanced settings (click to collapse)">
+                            <!-- <span class="toggleText">Advanced settings (click to expand)</span> -->
+                            <span class="toggleText"></span>
+                        </label>
+                        <input id="advancedSettings" type="checkbox">
+                        <!-- <input id="advancedSettings" type="checkbox" checked> -->
+                        <div>
+                            <label for="cut_sites_field">Allowed cut site types and counts</label><br>
+                            <div class="form-check form-check-inline">
+                                {% for subfield in form.cut_sites_field %}
+                                <div class="form-check form-check-inline">
+                                    {{ subfield(class="mr-2") }}
+                                    <label class="form-check-label" for="{{ subfield.id }}">{{ subfield.label.text }}</label>
+                                </div>
+                                {% endfor %}
+
+                                {% for error in form.cut_sites_field.errors %}
+                                <span class="text-danger">{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" name="action" value="return" onclick="toggleStep1()" class="btn btn-primary btn-block" id="btn_step1">Return to Step 1</button>
+                <button type="submit" name="action" value="submit" onclick="document.getElementsByName('client_step')[0].value='2'" class="btn btn-primary btn-block" id="btn_submit">Submit</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+
+
+<script>
+    $(function() {
+        $('[data-toggle="tooltip"]').tooltip();
+    });
+</script>
+
+<script>
+    function toggleStep1() {
+        $("#step1").show();
+        $("#step2").hide();
+        $("input[name='client_step']").val('1');
+    }
+
+    $(document).ready(function() {
+        var step = parseInt($("input[name='client_step']").val());
+        console.log(step);
+
+        if (step==1)
+        {
+            $("#step1").show();
+            $("#step2").hide();
+        }
+        else
+        {
+            $("#step1").hide();
+            $("#step2").show();
+        }
+
+        //Function to handle the display of In Vitro / In Vivo sections
+        function handleEnvironmentDisplay() {
+            if($("input[name='target_environment']:checked").val()=="in_vitro") {
+                $("#inVitroOptions").show();
+                $("#inVivoOptions").hide();
+            } else if($("input[name='target_environment']:checked").val()=="in_vivo") {
+                $("#inVivoOptions").show();
+                $("#inVitroOptions").hide();
+            }
+        }
+
+        //Function to handle the display of Custom Promoter section
+        function handleCustomPromoterDisplay() {
+            if($("input[name='in_vitro_option']:checked").val()=="custom_promoter") {
+                $("#customPromoterContainer").show();
+            } else {
+                $("#customPromoterContainer").hide();
+            }
+        }
+
+        //Event listeners for changes in radio button selections
+        $("input[name='target_environment']").change(handleEnvironmentDisplay);
+        $("input[name='in_vitro_option']").change(handleCustomPromoterDisplay);
+
+        //Initial setup: call the functions to set initial display state
+        handleEnvironmentDisplay();
+        handleCustomPromoterDisplay();
+    });
+</script>
+
+{% endblock %}
+
+
+

@@ -1,0 +1,146 @@
+﻿{% extends "base.html" %}
+
+{% block content %}
+
+<!DOCTYPE html>
+<html lang="">
+<head>
+    <link href="{{ url_for('static', filename = 'ui-lightness/jquery-ui.css')}}" rel="stylesheet">
+
+    <script type="text/javascript" src="{{ url_for('static', filename = 'scripts/jquery-1.11.0.min.js')}}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename = 'scripts/jquery-ui.js')}}"></script>
+
+    <meta charset="utf-8">
+    <title>{{ title }}</title>
+
+    <script>
+        $(document).ready(function() {
+
+            var sub_app_name = '{{sub_app_name}}';
+
+            function asyncUpdateResults() {
+                $.ajax({
+                    url: '/' + sub_app_name + '/jobs_summary_json',
+                    type: 'GET',
+                    success: function(data) {
+                        updateResults(data);
+                        setTimeout(asyncUpdateResults, 10000); // Update every 10 seconds
+                    },
+                    error: function() { }
+                });
+            }
+            asyncUpdateResults();
+
+            function createStatusBadge(status, progress) {
+                var statusBadge = '';
+                if (status === "Completed") {
+                    statusBadge = '<span class="badge badge-success">Completed</span>';
+                } else if (status === "Running") {
+                    statusBadge = '<span class="badge badge-warning">Running (' + progress + '%)</span>';
+                } else if (status === "Queued") {
+                    statusBadge = '<span class="badge badge-info">Queued</span>'; 
+                }
+                return statusBadge;
+            }
+
+            //Update results dynamically based on JSON data
+            function updateResults(data) {
+                $('.list-group').empty();
+                data.forEach(record => {
+                    statusBadge = createStatusBadge(record.status, record.progress);
+
+                    if (record.type == 'TC') {
+                        var jobInfoHTML = '<code>' + record.mutant_seq +'</code>';
+                    }
+                    else if (record.type == 'TS') {
+                        var jobInfoHTML = '[' + record.truth_vector + ']';
+                    }
+
+
+                    let content=`
+                        <div class="list-group-item">
+                            <div class="row my-1">
+                                <div class="col-md-8">
+                                    <p class="mb-0">
+                                        
+                                        <span class="d-block">
+                                            ${statusBadge}
+                                            <span class="text-muted">on ${record.date}</span> 
+                                            <span class="text-muted">[Job Id: ${record.id}]</span></br>
+                                            ${jobInfoHTML}
+
+                                        </span>
+                                    </p>
+                                </div>
+
+                                
+                                <div class="col-md-4 text-md-right">
+                                    <a role="button" class="btn btn-primary" href="${record.link}" target="_blank">Details</a>
+                                    <button class="btn btn-outline-danger delete-btn" data-job-id="${record.id}">Delete</button>
+                                </div>
+
+
+                            </div>
+                        </div>`;
+                    $('.list-group').append(content);
+                });
+
+
+                //Add event listener for delete buttons
+                $('.delete-btn').click(function() {
+                    const jobId = $(this).data('job-id');
+                    if (confirm("Are you sure you want to delete this job? ")) {
+                        $.post('/' + sub_app_name + '/jobs_summary_json', { job_id_to_delete: jobId }, function(data) {
+                                updateResults(data);
+                        });
+                    }
+                });
+
+                //Clear flashed messages after a certain time.
+                //Since we use AJAX to fetch job records, the flashed message that appears on initial page load (after request submission) persists.
+                const flashMessages = $("#flash-messages");
+                if (flashMessages.length) {
+                    //Remove the flash message after 10 seconds
+                    setTimeout(function() {
+                        flashMessages.hide();
+                    }, 10000);
+                }
+
+
+            }
+        });
+    </script>
+
+</head>
+
+<body>
+    <div class="container body-content" role="main">
+
+        <div id="flash-messages">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% if messages[0][0] == 'request_success' %}
+            <div class="alert alert-success" role="alert"> {{ messages[0][1]|safe }} </div>
+            {% endif %}
+            {% endif %}
+            {% endwith %}
+        </div>
+
+        <h1 class="my-3">Jobs</h1>
+
+        {% if store_jobs_days != -1 %}
+        Jobs will be automatically deleted after {{store_jobs_days}} days.
+        {% endif %}
+
+        <div class="card my-3 box-shadow">
+
+            <div class="list-group list-group-flush">
+                <!-- Records will be appended here dynamically -->
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
+
+{% endblock %}

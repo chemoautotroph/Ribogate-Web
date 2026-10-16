@@ -1,0 +1,99 @@
+﻿<!DOCTYPE html>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Colored String</title>
+    <style>
+        .container {
+            width: 200px; /* Adjust width as needed */
+            word-wrap: break-word;
+        }
+
+        .segment {
+            display: inline; /* Ensure inline display */
+        }
+    </style>
+</head>
+<body>
+    
+    <table>
+        <tr>
+            <td>
+                <div id="container" class="container"></div>
+            </td>
+            <td>
+                aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+            </td>
+            <td>
+                aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+            </td>
+            <td>
+                aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+            </td>
+            <td>
+                aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+            </td>
+            <td>
+                aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+            </td>
+            <td>
+                aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+            </td>
+            <td>
+                aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+            </td>
+            <td>
+                aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+            </td>
+        </tr>
+    </table>
+    
+
+    <script src="script.js"></script>
+</body>
+
+
+<style>
+    .container {
+        width: 200px; /* Adjust width as needed */
+        word-wrap: break-word;
+        border: 1px solid #000;
+        padding: 10px;
+    }
+
+    .segment {
+        display: inline; /* Ensure segments remain inline */
+    }
+</style>
+
+<script>
+    // Your string with different segments
+    const segments=[
+        { text: "Hello ssss sssssss ssss ssss sssss ssss ssss ssssssss, ",color: "red" },
+        { text: "this ",color: "blue" },
+        { text: "is fsdfffffsdfsdfsdfsdf ",color: "green" },
+        { text: "a ",color: "purple" },
+        { text: "colored ",color: "orange" },
+        { text: "string.",color: "brown" }
+    ];
+
+    // Function to create colored segments
+    function createColoredString(segments) {
+        const container=document.getElementById('container');
+        segments.forEach(segment => {
+            const span=document.createElement('span');
+            span.className='segment';
+            span.style.color=segment.color;
+            span.textContent=segment.text;
+            container.appendChild(span);
+        });
+    }
+
+    // Initialize the colored string
+    createColoredString(segments);
+</script>
+
+</html>

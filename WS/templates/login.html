@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+<body class="bg-light">
+    <div class="container body-content" role="main">
+        <h3 class="title">Login</h3>
+        <div class="box">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% if messages[0][0] == 'login_fail' %}
+            <div class="alert alert-danger" role="alert"> {{ messages[0][1]|safe }} </div>
+            {% elif messages[0][0] == 'signup_success' %}
+            <div class="alert alert-success" role="alert">{{ messages[0][1]|safe }} </div>
+            {% endif %}
+            {% endif %}
+            {% endwith %}
+            <div class="card box-shadow my-3">
+                <div class="card-body">
+                    <form method="POST" action="/login">
+                        {% if request.args.get('next') %}
+                        <input type="hidden" name="next" value="{{ request.args.get('next') }}">
+                        {% endif %}
+
+                        <div class="form-group">
+                            <div class="control">
+                                <input class="form-control" type="email" name="email" placeholder="Your Email" autofocus="">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="control">
+                                <input class="form-control" type="password" name="password" placeholder="Your Password">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox">
+                                <input type="checkbox">
+                                Remember me
+                            </label>
+                        </div>
+
+                        <div class="form-group mb-0">
+                            <p>
+                                <a href="{{ url_for('auth.reset_password_request') }}">Forgot your password?</a>
+                            </p>
+                            <p>
+                                <a href="{{ url_for('auth.signup') }}">Register as a new user?</a>
+                            </p>
+                        </div>
+
+                        <button class="btn btn-primary">Login</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+{% endblock %}

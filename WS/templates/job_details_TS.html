@@ -1,0 +1,296 @@
+﻿{% extends "base.html" %}
+
+{% block content %}
+
+<!DOCTYPE html>
+<html lang="">
+<head>
+    <style type="text/css">
+        /*div.truthTable {
+            float: left;
+            width: 15%;
+            overflow: hidden;
+            padding: 10px;
+        }*/
+
+
+        div.results {
+            float: left;
+            width: 25% overflow: hidden;
+            padding: 10px;
+        }
+
+        #overview {
+            word-break: break-word;
+            float-left;
+            width: 750px; /*This is key*/
+            overflow: hidden;
+            padding: 10px;
+            border-collapse: collapse;
+        }
+
+        #coarseGrained {
+            float: left;
+            width: 20%;
+        }
+
+
+        /*table style*/
+        #truth {
+            /*font-family: Arial, Helvetica, sans-serif;*/
+            border-collapse: collapse;
+            table-layout: fixed;
+            width: 100%;
+        }
+
+            #truth td, #truth th {
+                border: 1px solid #ddd;
+                padding: 0px;
+            }
+
+            #truth tr:nth-child(even) {
+                background-color: #f2f2f2;
+            }
+
+            #truth tr:hover {
+                background-color: #ddd;
+            }
+
+            #truth th {
+                padding-top: 12px;
+                padding-bottom: 12px;
+                text-align: left;
+                background-color: #4CAF50;
+                color: white;
+            }
+    </style>
+
+    <meta charset="utf-8">
+    <title>{{ title }}</title>
+</head>
+
+
+<body class="bg-light">
+    <div class="container body-content" role="main">
+        <h1 class="my-3">Job details</h1>
+        <div id="app">
+
+            <!-- Job parameter summary -->
+            <div class="card my-3 box-shadow">
+                <div class="card-body">
+                    <label for="advancedSettings" class="showMore card-title border-bottom border-gray pb-2" data-expand-text="Job parameters (click to expand)" data-collapse-text="Job parameters  (click to collapse)">
+                        <!-- <h5 class="card-title border-bottom border-gray pb-2">Request information</h5> -->
+                        <h5><span class="toggleText"></span></h5>
+                    </label>
+                    <input id="advancedSettings" type="checkbox">
+                    <div>
+                        <h6 class="border-bottom border-gray pb-2">Target logic function</h6>
+                        <div class="truthTable"><table id="truth" border="1"></table></div>
+                        </br>
+                        <h6 class="border-bottom border-gray pb-2">Input constraints</h6>
+                        <div class="form-group" id="inputConstraintFormGroup"></div>
+
+                        <dl class="row mb-0">
+                            <dt class="col-md-2">Job Id            </dt>
+                            <dd class="col-md-10">{{id}}</dd>
+                            <dt class="col-md-2">Temperature (℃)  </dt>
+                            <dd class="col-md-10">{{temperature}}</dd>
+                            <dt class="col-md-2">Created           </dt>
+                            <dd class="col-md-10">{{date}}</dd>
+                        </dl>
+
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Progress bar -->
+            <div class="card my-3 box-shadow">
+                <div class="card-body">
+                    <h5 class="card-title">Progress</h5>
+                    <div class="progress" style="height: 30px;"><div role="progressbar" class="progress-bar" aria-valuemin="0" aria-valuemax="100" aria-valuenow=""></div></div>
+                </div>
+            </div>
+
+            <!-- Results section -->
+            <div class="card my-3 box-shadow" id="designs" hidden="true">
+                <div class="card-body">
+                    <div class="clearfix">
+                        <h5 class="card-title float-md-left">Designs</h5> <div id="showFilterOptions" class="float-md-right mb-2">
+
+                            <!-- CSV download button -->
+                            <form action="/csv">
+                                <input type="hidden" name="id" value="{{id}}" /> <!-- https://stackoverflow.com/questions/732371/what-happens-if-the-action-field-in-a-form-has-parameters-->
+                                <button id="btn_download" class="btn btn-sm btn-primary">
+                                    <svg class="svg-inline--fa fa-download fa-w-16" aria-hidden="true" data-prefix="fas" data-icon="download" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg="">
+                                        <path fill="currentColor" d="M216 0h80c13.3 0 24 10.7 24 24v168h87.7c17.8 0 26.7 21.5 14.1 34.1L269.7 378.3c-7.5 7.5-19.8 7.5-27.3 0L90.1 226.1c-12.6-12.6-3.7-34.1 14.1-34.1H192V24c0-13.3 10.7-24 24-24zm296 376v112c0 13.3-10.7 24-24 24H24c-13.3 0-24-10.7-24-24V376c0-13.3 10.7-24 24-24h146.7l49 49c20.1 20.1 52.5 20.1 72.6 0l49-49H488c13.3 0 24 10.7 24 24zm-124 88c0-11-9-20-20-20s-20 9-20 20 9 20 20 20 20-9 20-20zm64 0c0-11-9-20-20-20s-20 9-20 20 9 20 20 20 20-9 20-20z"></path>
+                                    </svg><!-- <i class="fas fa-download"></i> --> Download
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Table of designed sequences -->
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th> <div class="d-flex align-items-center sortable">     Rank    </div>  </th>
+                                    <th> <div class="d-flex align-items-center">  {{rz_column_title | safe}}   </div> </th>
+                                    <th> <div class="d-flex align-items-center">  Structures  </div> </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in records %}
+                                <tr class="clickable-row">
+                                    <!-- <td><a href={{record[1]}} target="_blank">{{record[0]}} </a></td> --> <!-- This makes rank clickable -->
+                                    <td>{{record[0]}}</td>
+                                    <td>
+                                        <!-- code tag makes text monospace and red by default-->
+                                        <code style="word-break: break-all;">{{record[3] | safe}}</code>
+                                    </td>
+                                    <td><a role="button" class="btn btn-primary" href="{{record[1]}}" target="_blank">View</a></td>
+
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+
+
+                        <!-- Pagination hyperlinks -->
+                        <ul class="pagination mb-0">
+                            {% set total_pages = page_btns|length - 1 %}
+                            {% set display_range = 8 %} <!-- Number of pages to display around the current page -->
+                            {% if page_num > display_range %}
+                            <li class="page-item"><a href={{page_btns[0][1]}} class="page-link">0</a></li>
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                            {% endif %}
+
+                            {% for page_btn in page_btns %}
+                            {% set lower_bound = page_num - display_range if page_num - display_range > 0 else 0 %}
+                            {% set upper_bound = page_num + display_range if page_num + display_range < total_pages else total_pages %}
+                            {% if page_btn[0] >= lower_bound and page_btn[0] <= upper_bound %}
+                            {% if page_btn[0] == page_num %} <!-- Loop over all buttons and find the corresponding to current page and set it to active-->
+                            <li class="page-item active"><span class="page-link">{{page_btn[0]}}</span></li>
+                            {% else %}
+                            <li class="page-item"><a href={{page_btn[1]}} class="page-link">{{page_btn[0]}}</a></li>
+                            {% endif %}
+                            {% endif %}
+                            {% endfor %}
+
+                            {% if page_num + display_range < total_pages %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                            <li class="page-item"><a href={{page_btns[-1][1]}} class="page-link">{{total_pages}}</a></li>
+                            {% endif %}
+                        </ul>
+
+                    </div>                       
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+<script type='text/javascript'>
+
+var progress = {{progress}}
+progress_percent = progress*100
+$('.progress-bar').css('width', progress_percent +'%').attr('aria-valuenow', progress_percent)
+$('.progress-bar').text(progress_percent+'%')
+
+/*
+$("#btn_download").on('click', function () 
+{
+    console.log("EEEEEE")
+		$.getJSON('/csv', {}, function(data){
+        console.log("FFFFF")
+			});
+
+});
+*/
+
+//$("#designs").hide()
+
+if (progress < 1)
+{    setTimeout(function(){
+        window.location.reload(1);
+    }, 5000);
+}
+else
+{
+    //$("#designs").show()
+    $("#designs").attr("hidden", false);
+}
+
+
+
+var truth_vector = {{truth_vector}}
+var num_inputs   = {{num_inputs}}
+var input_seqs = {{input_seqs|tojson}}
+
+for(var i=0; i< num_inputs;i++)
+{
+    $("#inputConstraintFormGroup").append('<label for="InputConstraint'  + i.toString() + '">Input ' + i.toString() + ' sequence</label>')
+    $("#inputConstraintFormGroup").append('<textarea class="form-control " readonly = "readonly" rows="1" id="inputConstraint' + i.toString() +  '"name="InputConstraint' + i.toString() + '">' + input_seqs[i] + '</textarea>')
+}
+
+
+Draw_TT_Table(num_inputs)
+
+function Draw_Table(input_states)
+{
+	var table = document.getElementById("truth");
+	//Create Table
+	for(var i=0; i< (input_states.length);i++)
+	{
+		var input_state = input_states[i];
+		var row         = table.insertRow(i);
+		for(var j=0; j < input_state.length;j++)
+		{
+			var newCell       = row.insertCell(j);
+			newCell.innerHTML = input_state[j];
+		}
+
+		var newCell = row.insertCell(j)
+        newCell.innerHTML = truth_vector[i]
+	}
+
+	//Create header
+	var header = table.createTHead();
+    var row         = header.insertRow(0);
+	for(var j=0; j< input_states[0].length;j++)
+	{
+		var newCell = row.insertCell(j);
+		newCell.innerHTML = "Input " + j;
+	}
+	var radioHeader = row.insertCell(j);
+	radioHeader.innerHTML = "Output";
+}
+
+function Draw_TT_Table(num_inputs)
+{
+    if (num_inputs == 1)
+    {
+        input_states = [[0], [1]]
+    }
+    else if (num_inputs == 2)
+    {
+        input_states = [[0,0], [0,1], [1,0], [1,1]]
+    }
+    else if (num_inputs == 3)
+    {
+        input_states = [[0,0,0], [0,0,1], [0,1,0], [0,1,1], [1,0,0], [1,0,1], [1,1,0], [1,1,1]]
+    }
+
+    Draw_Table(input_states)
+}
+
+
+</script>
+
+</html>
+
+
+{% endblock %}
+
+
+
+

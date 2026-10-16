@@ -1,0 +1,161 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+
+    {%block imports%}
+
+    <link href="{{ url_for('static', filename = 'styles/vendor.css')}}" rel="stylesheet">
+
+    <!-- This contains the showMore functionality that collapses the advanced settings box-->
+    <link href="{{ url_for('static', filename = 'styles/site.css')}}" rel="stylesheet"> <!-- This messes up FORNA so override it in the structures file -->
+
+    <link href="{{ url_for('static', filename = 'ui-lightness/jquery-ui.css')}}" rel="stylesheet">
+
+    <script type="text/javascript" src="{{ url_for('static', filename = 'scripts/vendor.js')}}"></script> <!-- Needed for question icon-->
+    <script type="text/javascript" src="{{ url_for('static', filename = 'scripts/main.js')}}"></script> <!-- Needed for question icon-->
+    <script type="text/javascript" src="{{ url_for('static', filename = 'scripts/jquery-1.11.0.min.js')}}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename = 'scripts/jquery-ui.js')}}"></script>
+
+    <!-- Aug 2023. Before I didn't import it and a lot works, but the hidden.bs events aren't recognized without it-->
+    <!-- <script type="text/javascript" src="{{ url_for('static', filename = 'scripts/bootstrap.js')}}"></script> -->
+
+    {%endblock%}
+
+    <meta charset="utf-8">
+    <title>{{ title }}</title>
+
+    <script>
+
+        $(document).ready(function() {
+
+            //showmore CSS is defined in site.css
+            // Set the initial state based on data-expanded attribute
+            $('.showMore').each(function() {
+                var $this = $(this);
+                var content = $this.next("input").next();
+
+                // Temporarily remove the transition to set initial state instantly
+                // Without this, if we want the content to be initially expanded, it will start collapse and transition to expanded on page load
+                // instead of already being expanded
+                var originalTransition = content.css('transition');
+                content.css('transition', 'none');
+
+                var isExpanded = $this.attr('data-expanded') === 'true'; 
+                content.data('expanded', isExpanded); 
+
+                var toggleText = $this.find('.toggleText'); 
+                if (isExpanded) {
+                    content.css('max-height', content.prop('scrollHeight') + 'px');
+                    toggleText.text($this.data('collapse-text'));
+                } else {
+                    content.css('max-height', '0px');
+                    toggleText.text($this.data('expand-text'));
+                }
+
+                // Restore the original transition property after a short delay to ensure that any forced reflows are completed
+                setTimeout(() => {
+                    content.css('transition', originalTransition);
+                }, 10);
+            });
+
+            //This is required to make sure that the collapse happens at the same speed as the expansion
+            //It sets the CSS height to the actual height of the element so that time isn't spent transitioning from a super high height that is excessive
+            //It also make sure that the label doesn't become out of sync if the user rapidly clicks on it before transition is complete
+            var isTransitioning=false;
+
+            $(".showMore").click(function() {
+                if(isTransitioning) {
+                    return;
+                }
+
+                isTransitioning=true;
+
+                var $this=$(this);
+                var content=$this.next("input").next();
+                var toggleText=$this.find('.toggleText'); // targeting the .toggleText span inside the label
+
+                var isExpanded=content.data('expanded'); // Use jQuery's data method to store state
+
+                if(isExpanded) {
+                    // Collapse
+                    content.css('max-height',content.prop('scrollHeight')+'px');
+                    setTimeout(() => {
+                        content.css('max-height','0px');
+                    },10);
+                    // Set the text of .toggleText span from the data-expand-text attribute
+                    toggleText.text($this.data('expand-text'));
+                } else {
+                    // Expand
+                    content.css('max-height',content.prop('scrollHeight')+'px');
+                    // Set the text of .toggleText span from the data-collapse-text attribute
+                    toggleText.text($this.data('collapse-text'));
+                }
+
+                content.data('expanded',!isExpanded); // Toggle the state
+
+                content.one('transitionend',function() {
+                    isTransitioning=false;
+                });
+            });
+
+        });
+
+    </script>
+
+</head>
+
+
+<body class="bg-light">
+    <nav class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <!--  <img src="/img/logo.svg" height="30" alt="Ribosoft"> -->
+            </a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav mr-auto">
+                    {% if current_user.is_authenticated %}
+                    {% if request.endpoint != 'main.index' %}
+                    {% if 'TS' in request.path %}
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('Server.Request_TS') }}">New request</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('Server.TS_jobs_summary') }}">Jobs</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('main.index_TC') }}">Switch to TriCleaver</a></li>
+                    {% elif 'TC' in request.path %}
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('Server.Request_TC') }}">New request</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('Server.TC_jobs_summary') }}">Jobs</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('main.index_TS') }}">Switch to TruthSeqEr</a></li>
+                    {% endif %}
+                    {% endif %}
+                    <li class="nav-item">          <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>                    </li>
+                    {% else %}
+                    <li class="nav-item">          <a class="nav-link" href="{{ url_for('auth.login') }}">Login</a>                    </li>
+                    <li class="nav-item">          <a class="nav-link" href="{{ url_for('auth.signup') }}">Signup</a>                    </li>
+                    {% endif %}
+
+                </ul>
+
+
+            </div>
+        </div>
+    </nav>
+
+    <div class="hero-body">
+        <div class="container has-text-centered">
+            {% block content %}
+            {% endblock %}
+        </div>
+    </div>
+
+    {% block forna %}
+    {% endblock %}
+
+</body>
+
+    {% block script %}
+    {% endblock %}
+
+</html>

@@ -1,0 +1,38 @@
+﻿{% extends "base.html" %}
+
+{% block content %}
+<div class="container body-content" role="main">
+    <h1 class="title"> Welcome<!--, {{ name }}-->! </h1>
+    <h2> <b>TruthSeqEr</b> is a web service for designing ribozyme-based logic gates (ribogates)</h2>
+
+    <div class="wrapper">
+        <div>
+            Generate a population of ribogates implementing a target Boolean function. <br/><br/>
+            <form action="/TS/request" method="get">
+                <input type="submit" value="New TruthSeqEr job" class="btn btn-primary btn-block" id="TS_Request">
+            </form>
+        </div>
+        <div>
+            Track the progress of on-going and completed TruthSeqEr jobs.<br /><br />
+            <form action="/TS/jobs_summary" method="get">
+                <input type="submit" value="View jobs" class="btn btn-primary btn-block" id="Launch_TS">
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<style>
+    .wrapper {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-column-gap: 1em;
+    }
+
+        .wrapper > div {
+            background: #eee;
+            padding: 1em;
+        }
+</style>
+{% endblock %}

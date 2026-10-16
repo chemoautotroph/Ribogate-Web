@@ -1,0 +1,221 @@
+﻿{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container body-content" role="main">
+    <h1 class="my-3">Create a new request</h1>
+    <div id="app">
+        <form action='/TS/process_submission' method="post">
+
+            <div class="my-3 p-3 bg-white rounded box-shadow">
+                <h6 class="border-bottom border-gray pb-2">Target logic function</h6>
+
+                <div class="form-group mb-0">
+                    <label for="num_inputs_list">Select number of inputs of logic function:</label>
+                    <span data-toggle="tooltip" data-placement="right" title="Test"><i class="fas fa-question-circle text-info"></i></span>
+
+                    <select id="num_inputs_list" name="num_inputs_list">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                    </select>
+                </div>
+
+                <div class="truthTable"><table id="truth" border="1"></table></div>
+
+
+            </div>
+
+
+            <div class="my-3 p-3 bg-white rounded box-shadow">
+                <h6 class="border-bottom border-gray pb-2">
+                    Input constraints
+                    <span data-toggle="tooltip" data-placement="right" title="Test"><i class="fas fa-question-circle text-info"></i></span>
+                </h6>
+
+                <div class="form-group" id="inputConstraintFormGroup">
+                </div>
+            </div>
+
+            <div class="my-3 p-3 bg-white rounded box-shadow">
+                <h6 class="border-bottom border-gray pb-2">
+                    Temperature
+                    <span data-toggle="tooltip" data-placement="right" title="Test"><i class="fas fa-question-circle text-info"></i></span>
+                </h6>
+
+                <div class="form-group" id="temperatureFormGroup">
+                    <textarea class="temperature" rows="1" id="temperature" name="temperature">37.0</textarea>
+                </div>
+            </div>
+
+            <input type="submit" value="Submit request" class="btn btn-primary btn-block" id="btn_submit">
+        </form>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block script %}
+
+<script type='text/javascript'>
+    var num_inputs=1
+    var num_states=2
+    Draw_TT_Table(num_inputs)
+    $("#inputConstraintFormGroup").append('<label for="InputConstraint">Input 0 sequence</label>')
+    $("#inputConstraintFormGroup").append(' (length: <span id="seq_length0"></span> )')
+    $("#inputConstraintFormGroup").append('<textarea class="form-control " rows="1" id="inputConstraint0" name="InputConstraint0">NNNNNNNNNNNNNNNNNNNNNN</textarea>')
+    $(".form-control ")
+        .keyup(function() {
+            var value=$(this).val();
+            $("#seq_length0").text(value.length);
+        })
+        .keyup();
+
+    function Draw_Table(input_states) 
+    {
+        var table=document.getElementById("truth");
+
+        //Elimate previous table if there is one
+        table.deleteTHead();
+        numRowsToDelete=table.rows.length
+        for(var j=0;j<numRowsToDelete;j++) {
+            table.deleteRow(0);
+        }
+
+        //Create Table
+        for(var i=0;i<(input_states.length);i++) {
+            var input_state=input_states[i];
+            var row=table.insertRow(i);
+            for(var j=0;j<input_state.length;j++) {
+                var newCell=row.insertCell(j);
+                newCell.innerHTML=input_state[j];
+            }
+
+            //Create radio button
+            var radioCell=row.insertCell(j)
+            var x=document.createElement("input");
+            x.setAttribute("type","radio");
+            radio_group_name="truth_vector_row"+i.toString()
+            x.setAttribute("name",radio_group_name);
+            x.setAttribute("value",0);
+            x.setAttribute("checked",true);
+            radioCell.appendChild(x);
+
+            //The change event for dynamic elements needs to be added here
+            $(x).on('change',function() {
+                Retrieve_Truth_Vector()
+            });
+
+            var radioCell=row.insertCell(j+1)
+            var x=document.createElement("input");
+            x.setAttribute("type","radio");
+            radio_group_name="truth_vector_row"+i.toString()
+            x.setAttribute("name",radio_group_name);
+            x.setAttribute("value",1);
+            //x.setAttribute("checked", false);
+            radioCell.appendChild(x);
+
+            $(x).on('change',function() {
+                Retrieve_Truth_Vector()
+            });
+
+        }
+
+        //Create header
+        var header=table.createTHead();
+
+        var row=header.insertRow(0);
+        var newCell=row.insertCell(0);
+        newCell.colSpan=input_states[0].length;
+        newCell.innerHTML="Input combinations"
+        var newCell=row.insertCell(1);
+        newCell.colSpan=2;
+        newCell.innerHTML="Target outputs"
+
+
+        var row=header.insertRow(1);
+        for(var j=0;j<input_states[0].length;j++) {
+            var newCell=row.insertCell(j);
+            newCell.innerHTML="Input "+j;
+        }
+
+        //Create radio cell header
+        var radioHeader=row.insertCell(j);
+        radioHeader.innerHTML="0";
+
+        //Create radio cell header
+        var radioHeader=row.insertCell(j+1);
+        radioHeader.innerHTML="1";
+
+
+    }
+
+    function Retrieve_Truth_Vector() {
+        truth_vector=[]
+
+        for(var k=0;k<num_states;k++) {
+            state_val=$('input[name='+k.toString()+']:checked').val();
+            truth_vector.push(state_val)
+        }
+        console.log(truth_vector)
+
+    }
+
+    function Draw_TT_Table(num_inputs) {
+        if(num_inputs==1) {
+            input_states=[[0],[1]]
+        }
+        else if(num_inputs==2) {
+            input_states=[[0,0],[0,1],[1,0],[1,1]]
+        }
+        else if(num_inputs==3) {
+            input_states=[[0,0,0],[0,0,1],[0,1,0],[0,1,1],[1,0,0],[1,0,1],[1,1,0],[1,1,1]]
+        }
+
+        Draw_Table(input_states)
+    }
+
+    $('#num_inputs_list').on('change',function() {
+        num_inputs=$('#num_inputs_list').val()
+        num_states=Math.pow(2,num_inputs)
+        Draw_TT_Table(num_inputs)
+
+        console.log($("#inputConstraint0").val())
+        $("#inputConstraintFormGroup").empty()
+        for(var i=0;i<num_inputs;i++) {
+            $("#inputConstraintFormGroup").append('<label for="InputConstraint'+i.toString()+'">Input '+i.toString()+' sequence</label>')
+            $("#inputConstraintFormGroup").append(' (length: <span id="seq_length'+i.toString()+'"></span> )')
+            $("#inputConstraintFormGroup").append('<textarea class="form-control " rows="1" id="inputConstraint'+i.toString()+'"name="InputConstraint'+i.toString()+'">NNNNNNNNNNNNNNNNNNNNNN</textarea>')
+        }
+
+        //This needs to be in this section so that it can be re-bound to dynamically created text-areas
+        $(".form-control ")
+            .keyup(function() {
+                var value=$(this).val();
+                var id=$(this).attr('id');
+                $("#seq_length"+id.substr(-1)).text(value.length);
+            })
+            .keyup();
+
+    });
+
+
+    $("#btn_submit").click(function() {
+        console.log("Handler for .click() called.");
+    });
+
+
+
+</script>
+
+<script>
+    $(function() {
+        $('[data-toggle="tooltip"]').tooltip();
+    });
+</script>
+
+
+{% endblock %}
+
+
+
