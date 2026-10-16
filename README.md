@@ -1,13 +1,17 @@
 # Ribogate Web deployment archive
 
-This repository preserves the local Flask web application containing **TriCleaver** and **TruthSeqEr**, for reproducible setup and future deployment. It is a deployment archive, not the official upstream release or a claim of original authorship.
+**Original work by Nicholas (Nick) Kamel, Kharma Lab, Concordia University.**
+
+This repository archives the existing Ribogate Flask web application, including **TriCleaver** and **TruthSeqEr**, solely to preserve the web interface and simplify future deployment. Nick's public [TriCleaver repository](https://github.com/nickkamel/TriCleaver) contains the command-line algorithm release but does not include the web application files archived here.
+
+**All credit for the original algorithms and web application belongs to Nick Kamel and the original research contributors at Kharma Lab, Concordia University. The owner of this archive claims no authorship of, or research credit for, that work.** This repository is a deployment archive, not an official upstream release.
 
 ## Provenance and attribution
 
 - The original TriCleaver research software and associated Ribogate web application are attributed to **Nicholas Kamel**. Related public algorithm repository: https://github.com/nickkamel/TriCleaver.
 - Research laboratory: **Kharma Lab, Concordia University**, as identified by the repository custodian. This attribution does not imply institutional endorsement or determine legal ownership.
 - This snapshot was supplied from the local `Desktop/Ribogate` project on 2026-10-16. That directory contained no Git history, so its upstream commit and complete copyright ownership could not be established.
-- Repository maintainer: **chemoautotroph**, preserving and adapting the supplied project for deployment. Original algorithm and interface authorship is not claimed by this maintainer.
+- The archive owner's role is limited to preserving the supplied files and making the deployment packaging changes documented below. These changes do not establish authorship of the original software.
 - Existing third-party notices in bundled JavaScript, CSS and fonts are retained; those components remain subject to their respective terms.
 - No project-wide license was supplied with this local snapshot. This archive does not grant a new license or establish redistribution rights. Attribution is not a substitute for permission. Copyright remains with the respective rights holders; confirm applicable permissions before reuse or redistribution.
 
