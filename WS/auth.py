@@ -35,7 +35,7 @@ def login_post():
 
     #Check if the user actually exists
     #Take the user-supplied password, hash it, and compare it to the hashed password in the database
-    if not user or not check_password_hash(user.password, password):
+    if not user or not user.password or not check_password_hash(user.password, password):
         flash('Please check your login details and try again.', 'login_fail')
         return redirect(url_for('auth.login')) # if the user doesn't exist or password is wrong, reload the page
 
@@ -162,6 +162,9 @@ def reset_password_request():
     if request.method == 'POST': #This route will behave differently based on whether the page was accessed via GET (by clicking on link) or POST (by submitting form)
         email = request.form.get('email')
         user = User.query.filter_by(email=email).first()
+        if user and not user.password:
+            flash('This account uses Google sign-in. Please use Continue with Google.', 'login_fail')
+            return redirect(url_for('auth.login'))
         if user:
             token = login_serializer.dumps(email, salt='password-reset-salt')
             reset_url = url_for('auth.reset_password', token=token, _external=True)         

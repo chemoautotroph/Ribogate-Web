@@ -1,0 +1,9 @@
+{% if config.GOOGLE_LOGIN_ENABLED %}
+<form method="post" action="{{ url_for('google_auth.start') }}" class="my-3">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="next" value="{{ request.args.get('next', '') }}">
+    <button type="submit" aria-label="Continue with Google" style="padding:0;border:0;background:transparent;border-radius:4px;cursor:pointer">
+        <img src="{{ url_for('static', filename='google-signin.svg') }}" alt="Continue with Google" height="40">
+    </button>
+</form>
+{% endif %}

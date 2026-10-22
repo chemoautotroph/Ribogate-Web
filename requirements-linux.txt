@@ -1,4 +1,5 @@
 # Linux/Python 3.12; legacy Windows lock remains separate.
+Authlib==1.9.1
 alabaster==0.7.16
 Babel==2.15.0
 blinker==1.9.0

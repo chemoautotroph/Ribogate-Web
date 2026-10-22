@@ -37,6 +37,9 @@ def load_user(user_id):
 from .auth import auth as auth_blueprint
 app.register_blueprint(auth_blueprint)
 
+from .google_auth import google_auth as google_auth_blueprint
+app.register_blueprint(google_auth_blueprint)
+
 #blueprint for non-auth parts
 from .main import main as main_blueprint
 app.register_blueprint(main_blueprint)

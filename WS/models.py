@@ -8,6 +8,21 @@ class User(UserMixin, db.Model):
     name     = db.Column(db.String(1000))
     confirmed = db.Column(db.Boolean, default=False) 
 
+class GoogleIdentity(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, unique=True)
+    subject = db.Column(db.String(255), nullable=False, unique=True)
+    email = db.Column(db.String(100), nullable=False)
+
+
+class GoogleLoginAttempt(db.Model):
+    state_hash = db.Column(db.String(64), primary_key=True)
+    binding_hash = db.Column(db.String(64), nullable=False, index=True)
+    expires_at = db.Column(db.Float, nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    next_path = db.Column(db.String(2048), nullable=False)
+
+
 class Individuals(db.Model): 
     id_in_db   = db.Column(db.Integer, primary_key=True, index=True)
     id         = db.Column(db.Integer, index=True)   

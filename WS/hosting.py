@@ -42,6 +42,8 @@ def configure_hosting(app):
         TRUSTED_HOSTS=[app.config['SERVER_NAME'].split(':')[0]])
     if app.extensions.get('ribogate_hosting'):
         return
+    from .google_auth import configure_google_oauth
+    configure_google_oauth(app)
     app.extensions['ribogate_hosting'] = True
     if prefix:
         app.wsgi_app = PathPrefix(app.wsgi_app, prefix)
@@ -54,7 +56,7 @@ def configure_hosting(app):
             abort(404)
         if request.path == '/debug_novelty':
             abort(404)
-        if request.method == 'POST' and request.path in ('/login','/signup','/reset_password_request','/resend_confirmation'):
+        if request.method == 'POST' and request.path in ('/login','/signup','/reset_password_request','/resend_confirmation','/auth/google/start'):
             # Origin is loopback-only; the limit is deliberately aggregate per endpoint.
             history = attempts[request.path]
             now = time.monotonic()
@@ -116,4 +118,5 @@ def configure_hosting(app):
 
     @app.get('/healthz')
     def health():
-        return {'service':'tricleaver','status':'ok','email_enabled':app.config['SEND_EMAILS']}
+        return {'service':'tricleaver','status':'ok','email_enabled':app.config['SEND_EMAILS'],
+                'google_login_enabled':app.config.get('GOOGLE_LOGIN_ENABLED', False)}

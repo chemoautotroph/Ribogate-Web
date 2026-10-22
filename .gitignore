@@ -27,3 +27,5 @@ smoke-test-report.json
 *.egg-info/
 wheelhouse/
 dist/
+client_secret*.json
+google-client*.json

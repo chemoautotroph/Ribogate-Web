@@ -16,6 +16,8 @@
             {% endwith %}
             <div class="card box-shadow my-3">
                 <div class="card-body">
+                    {% include "google_button.html" %}
+                    {% if config.GOOGLE_LOGIN_ENABLED %}<p>Or sign in with your email and password:</p>{% endif %}
                     <form method="POST" action="{{ url_for('auth.login') }}">
 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         {% if request.args.get('next') %}

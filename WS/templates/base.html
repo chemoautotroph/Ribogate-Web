@@ -140,6 +140,7 @@
                     {% endif %}
                     {% endif %}
                     <li class="nav-item"><form method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn nav-link" type="submit">Logout</button></form></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('google_auth.account') }}">Account</a></li>
                     {% else %}
                     <li class="nav-item">          <a class="nav-link" href="{{ url_for('auth.login') }}">Login</a>                    </li>
                     <li class="nav-item">          <a class="nav-link" href="{{ url_for('auth.signup') }}">Signup</a>                    </li>

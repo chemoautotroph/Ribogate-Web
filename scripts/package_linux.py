@@ -23,12 +23,15 @@ for wheel in sorted(wheels.glob('*.whl')):
     lines.append(metadata['Name']+'=='+metadata['Version']+' --hash=sha256:'+hashlib.sha256(wheel.read_bytes()).hexdigest())
 (destination/'requirements-offline.lock').write_text('\n'.join(lines)+'\n')
 with tarfile.open(destination/'application.tar.gz','w:gz') as archive:
-    for p in sorted(ROOT.rglob('*')):
-        relative=p.relative_to(ROOT)
-        if any(part in {'.git','.venv','instance','__pycache__','dist','.linux-build'} for part in relative.parts):
-            continue
-        if p.is_file() and p.suffix not in {'.pyc','.exe','.log'} and not p.name.startswith('.env'):
-            archive.add(p,arcname=relative,recursive=False)
+    source_paths=subprocess.check_output(['git','ls-files','--cached','--others','--exclude-standard','-z'],cwd=ROOT).decode().strip('\0').split('\0')
+    native_paths=['vienna_rna_binaries/'+name for name in ('RNAfold','RNAfold300','RNAcofold','RNAcofold300','linux-manifest.json')]
+    for name in sorted(set(source_paths+native_paths)):
+        p=ROOT/name
+        if not p.is_file() or p.is_symlink():
+            raise RuntimeError('Missing or unexpected package source: '+name)
+        if (p.name.startswith(('.env','client_secret','google-client')) and p.name != '.env.example') or p.suffix in {'.db','.sqlite','.log','.exe'}:
+            raise RuntimeError('Refusing private/generated package source: '+name)
+        archive.add(p,arcname=name,recursive=False)
 paths=[p for p in sorted(destination.rglob('*')) if p.is_file() and p.name!='SHA256SUMS']
 (destination/'SHA256SUMS').write_text(''.join(hashlib.sha256(p.read_bytes()).hexdigest()+'  '+str(p.relative_to(destination))+'\n' for p in paths))
 print('Offline package:',destination)

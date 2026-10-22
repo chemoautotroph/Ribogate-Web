@@ -106,6 +106,10 @@ curl -f -H 'Host: kharmalab.cloud' http://127.0.0.1:8000/tricleaver/healthz
 
 ## Email
 
+Google sign-in is available independently of email delivery. See
+[Google OAuth setup and update instructions](GOOGLE_OAUTH.md) for its separate client,
+callback URL, existing-account linking and data-preserving Linux updater.
+
 Email is disabled initially. New accounts can log in immediately; users view results
 on the Jobs page. The UI explains that email notifications and password-reset emails
 are unavailable. To enable email, use `sudoedit /etc/tricleaver/environment`, configure
