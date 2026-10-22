@@ -8,13 +8,13 @@
     <div class="wrapper">
         <div>
             Generate a population of ribogates implementing a target Boolean function. <br/><br/>
-            <form action="/TS/request" method="get">
+            <form action="{{ url_for('Server.Request_TS') }}" method="get">
                 <input type="submit" value="New TruthSeqEr job" class="btn btn-primary btn-block" id="TS_Request">
             </form>
         </div>
         <div>
             Track the progress of on-going and completed TruthSeqEr jobs.<br /><br />
-            <form action="/TS/jobs_summary" method="get">
+            <form action="{{ url_for('Server.TS_jobs_summary') }}" method="get">
                 <input type="submit" value="View jobs" class="btn btn-primary btn-block" id="Launch_TS">
             </form>
         </div>

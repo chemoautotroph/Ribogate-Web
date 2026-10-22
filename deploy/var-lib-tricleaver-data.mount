@@ -1,0 +1,13 @@
+[Unit]
+Description=Bounded TriCleaver application data
+Before=tricleaver-web.service
+
+[Mount]
+What=/var/lib/tricleaver-storage/data.ext4
+Where=/var/lib/tricleaver-data
+Type=ext4
+Options=loop,nodev,nosuid,noexec
+TimeoutSec=30
+
+[Install]
+WantedBy=multi-user.target

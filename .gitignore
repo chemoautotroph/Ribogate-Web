@@ -19,6 +19,10 @@ server_logs.txt
 obj/
 vienna_rna_binaries/*.exe
 vienna_rna_binaries/*.download
+vienna_rna_binaries/RNAfold*
+vienna_rna_binaries/RNAcofold*
+vienna_rna_binaries/linux-manifest.json
+.linux-build/
 smoke-test-report.json
 *.egg-info/
 wheelhouse/

@@ -20,7 +20,7 @@
 
             function asyncUpdateResults() {
                 $.ajax({
-                    url: '/' + sub_app_name + '/jobs_summary_json',
+                    url: '{{ url_for('main.index') }}' + sub_app_name + '/jobs_summary_json',
                     type: 'GET',
                     success: function(data) {
                         updateResults(data);
@@ -39,6 +39,9 @@
                     statusBadge = '<span class="badge badge-warning">Running (' + progress + '%)</span>';
                 } else if (status === "Queued") {
                     statusBadge = '<span class="badge badge-info">Queued</span>'; 
+                }
+                if (status === "Failed" || status === "Timed out") {
+                    statusBadge = '<span class="badge badge-danger">' + status + '</span>';
                 }
                 return statusBadge;
             }
@@ -90,7 +93,7 @@
                 $('.delete-btn').click(function() {
                     const jobId = $(this).data('job-id');
                     if (confirm("Are you sure you want to delete this job? ")) {
-                        $.post('/' + sub_app_name + '/jobs_summary_json', { job_id_to_delete: jobId }, function(data) {
+                        $.post('{{ url_for('main.index') }}' + sub_app_name + '/jobs_summary_json', { job_id_to_delete: jobId }, function(data) {
                                 updateResults(data);
                         });
                     }
@@ -120,7 +123,7 @@
             {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
             {% if messages[0][0] == 'request_success' %}
-            <div class="alert alert-success" role="alert"> {{ messages[0][1]|safe }} </div>
+            <div class="alert alert-success" role="alert"> {{ messages[0][1] }} </div>
             {% endif %}
             {% endif %}
             {% endwith %}

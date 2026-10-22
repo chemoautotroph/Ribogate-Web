@@ -11,20 +11,20 @@
             {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
             {% if messages[0][0] == 'max_num_jobs_exceeded' %}
-            <div class="alert alert-danger" role="alert"> {{ messages[0][1]|safe }} </div>
+            <div class="alert alert-danger" role="alert"> {{ messages[0][1] }} </div>
             {% endif %}
             {% endif %}
             {% endwith %}
 
 
             Generate a population of selective ribozymes targeting a given trinucleotide repeat disorder.<br /><br />
-            <form action="/TC/request" method="get">
+            <form action="{{ url_for('Server.Request_TC') }}" method="get">
                 <input type="submit" value="New TriCleaver job" class="btn btn-primary btn-block" id="TC_Request">
             </form>
         </div>
         <div>
             Track the progress of on-going and completed TriCleaver jobs.<br /><br /><br />
-            <form action="/TC/jobs_summary" method="get">
+            <form action="{{ url_for('Server.TC_jobs_summary') }}" method="get">
                 <input type="submit" value="View jobs" class="btn btn-primary btn-block" id="Launch_TC">
             </form>
         </div>

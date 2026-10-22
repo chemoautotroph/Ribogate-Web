@@ -16,6 +16,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix='ribogate-email-test-') as directory:
         # Isolate test data and override every credential before application imports.
         os.environ.update(RIBOGATE_DATA_DIR=directory, RIBOGATE_SECRET_KEY=secrets.token_hex(32),
+                          RIBOGATE_BASE_PATH='/tricleaver', RIBOGATE_URL_SCHEME='http',
                           SENDGRID_API_KEY='test-placeholder', SMTP2GO_API_KEY='test-placeholder',
                           RIBOGATE_EMAIL_FROM='sender@example.invalid', RIBOGATE_EMAIL_SERVICE='sendgrid')
         from runserver import configure_app
@@ -42,24 +43,28 @@ def main():
                 else:
                     raise AssertionError('Provider rejection was not reported')
             client = app.test_client()
+            def post(path, data):
+                page=client.get('/tricleaver/login')
+                token=re.search(r'name="csrf_token"[^>]*value="([^"]+)"',page.text).group(1)
+                return client.post('/tricleaver'+path,data=dict(data,csrf_token=token))
             password = secrets.token_urlsafe(24)
             with patch('WS.auth.send_email') as outbox:
-                result = client.post('/signup', data={'email':'mailtest@example.invalid',
+                result = post('/signup', data={'email':'mailtest@example.invalid',
                     'password':password, 'confirm_password':password})
                 assert result.status_code == 302 and outbox.call_count == 1
                 body = outbox.call_args.args[0]
                 confirm_url = re.search(r'href="([^"]+)"', body).group(1)
-                assert confirm_url.startswith('http://127.0.0.1:8000/confirm/')
+                assert confirm_url.startswith('http://127.0.0.1:8000/tricleaver/confirm/')
                 assert client.get(urlsplit(confirm_url).path).status_code == 302
-                client.post('/reset_password_request', data={'email':'mailtest@example.invalid'})
+                post('/reset_password_request', data={'email':'mailtest@example.invalid'})
                 reset_url = re.search(r'href="([^"]+)"', outbox.call_args.args[0]).group(1)
-                assert reset_url.startswith('http://127.0.0.1:8000/reset_password/')
+                assert reset_url.startswith('http://127.0.0.1:8000/tricleaver/reset_password/')
                 replacement = secrets.token_urlsafe(24)
-                assert client.post(urlsplit(reset_url).path, data={'password':replacement,
+                assert post(urlsplit(reset_url).path.removeprefix('/tricleaver'), data={'password':replacement,
                     'confirm_password':replacement}).status_code == 302
-                assert client.post('/login', data={'email':'mailtest@example.invalid',
+                assert post('/login', data={'email':'mailtest@example.invalid',
                     'password':replacement}).status_code == 302
-                assert client.get('/TC').status_code == 200
+                assert client.get('/tricleaver/TC').status_code == 200
             print('Email adapters, rejection handling, confirmation and password reset PASSED; no email sent.')
         finally:
             with app.app_context():

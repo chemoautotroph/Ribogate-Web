@@ -1,0 +1,71 @@
+[Unit]
+Description=TriCleaver web application and serial design queue
+Requires=var-lib-tricleaver\x2ddata.mount
+After=network.target var-lib-tricleaver\x2ddata.mount
+AssertPathIsMountPoint=/var/lib/tricleaver-data
+StartLimitIntervalSec=300
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=tricleaver
+Group=tricleaver
+WorkingDirectory=/opt/tricleaver/app
+EnvironmentFile=/etc/tricleaver/environment
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=OPENBLAS_NUM_THREADS=1
+Environment=OMP_NUM_THREADS=1
+Environment=HOME=/var/lib/tricleaver-data
+Environment=TMPDIR=/tmp
+ExecStart=/opt/tricleaver/venv/bin/python /opt/tricleaver/app/runserver.py
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+KillMode=control-group
+OOMPolicy=stop
+CPUQuota=200%
+CPUWeight=50
+MemoryHigh=2G
+MemoryMax=3G
+MemorySwapMax=0
+TasksMax=96
+LimitCORE=0
+UMask=0077
+StandardOutput=journal
+StandardError=journal
+LogRateLimitIntervalSec=30s
+LogRateLimitBurst=200
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/tricleaver-data
+BindPaths=/var/lib/tricleaver-data/tmp:/tmp /var/lib/tricleaver-data/tmp:/var/tmp
+PrivateTmp=true
+PrivateDevices=true
+NoNewPrivileges=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+ProtectControlGroups=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectKernelLogs=true
+ProtectClock=true
+ProtectHostname=true
+ProtectProc=invisible
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+SystemCallArchitectures=native
+SystemCallFilter=~@mount
+RestrictAddressFamilies=AF_UNIX AF_INET
+InaccessiblePaths=-/etc/ifold -/var/lib/ifold-data -/var/lib/ifold-storage -/etc/cloudflared
+IPAddressDeny=0.0.0.0/8 10.0.0.0/8 100.64.0.0/10 169.254.0.0/16 172.16.0.0/12
+IPAddressDeny=192.0.0.0/24 192.0.2.0/24 192.168.0.0/16 198.18.0.0/15 198.51.100.0/24 203.0.113.0/24
+IPAddressDeny=224.0.0.0/4 240.0.0.0/4 ::/0
+IPAddressAllow=127.0.0.0/8
+SocketBindAllow=ipv4:tcp:8000
+SocketBindDeny=any
+
+[Install]
+WantedBy=multi-user.target

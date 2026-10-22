@@ -22,7 +22,7 @@
     <h1 class="my-3">Create a new TriCleaver request</h1>
 
     <div id="app">
-        <form action='/TC/process_submission' method="post">
+        <form action='{{ url_for('Server.ProcessSubmission_TC') }}' method="post">
             <input type="hidden" name="client_step" value="{{step}}">
 
             {{ form.hidden_tag() }}

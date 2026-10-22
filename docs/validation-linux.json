@@ -1,0 +1,19 @@
+{
+  "timestamp_utc": "2026-10-22T03:00:46.385190+00:00",
+  "python": "3.12.3",
+  "platform": "Linux-6.8.0-147-generic-x86_64-with-glibc2.39",
+  "mail_sent": false,
+  "checks": [
+    "All four downloaded executables produced parseable structures and BPPMs",
+    "Signup, login, CSRF-validated two-step TC submission and scheduler completion",
+    "Nonempty results, structure HTML/JSON/state changes, static assets and valid XLSX export",
+    "Production WSGI mount, CSRF, ownership, cancellation protection, redirect confinement and disabled debug/TS routes",
+    "Server restart preserves user, completed job and downloadable results",
+    "Running-job cancellation removes its Linux process group",
+    "Interrupted running job resumes after restart; previous descendants are gone",
+    "Durable runtime deadline terminates the job and releases the queue"
+  ],
+  "passed": true,
+  "vienna_upstream_commit": "ViennaRNA-2.3.5",
+  "tc_debug_results": 8
+}

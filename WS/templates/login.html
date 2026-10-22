@@ -8,15 +8,16 @@
             {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
             {% if messages[0][0] == 'login_fail' %}
-            <div class="alert alert-danger" role="alert"> {{ messages[0][1]|safe }} </div>
+            <div class="alert alert-danger" role="alert"> {{ messages[0][1] }} </div>
             {% elif messages[0][0] == 'signup_success' %}
-            <div class="alert alert-success" role="alert">{{ messages[0][1]|safe }} </div>
+            <div class="alert alert-success" role="alert">{{ messages[0][1] }} </div>
             {% endif %}
             {% endif %}
             {% endwith %}
             <div class="card box-shadow my-3">
                 <div class="card-body">
-                    <form method="POST" action="/login">
+                    <form method="POST" action="{{ url_for('auth.login') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         {% if request.args.get('next') %}
                         <input type="hidden" name="next" value="{{ request.args.get('next') }}">
                         {% endif %}

@@ -55,4 +55,5 @@ def start_scheduler():
             
 
     scheduler_thread = threading.Timer(0.5, do_stuff, ())
+    scheduler_thread.daemon = True
     scheduler_thread.start()

@@ -119,7 +119,7 @@
                         <h5 class="card-title float-md-left">Designs</h5> <div id="showFilterOptions" class="float-md-right mb-2">
 
                             <!-- CSV download button -->
-                            <form action="/csv">
+                            <form action="{{ url_for('Server.CSV') }}">
                                 <input type="hidden" name="id" value="{{id}}" /> <!-- https://stackoverflow.com/questions/732371/what-happens-if-the-action-field-in-a-form-has-parameters-->
                                 <button id="btn_download" class="btn btn-sm btn-primary">
                                     <svg class="svg-inline--fa fa-download fa-w-16" aria-hidden="true" data-prefix="fas" data-icon="download" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg="">
@@ -200,7 +200,7 @@ $('.progress-bar').text(progress_percent+'%')
 $("#btn_download").on('click', function () 
 {
     console.log("EEEEEE")
-		$.getJSON('/csv', {}, function(data){
+		$.getJSON('{{ url_for('Server.CSV') }}', {}, function(data){
         console.log("FFFFF")
 			});
 

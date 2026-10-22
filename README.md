@@ -23,6 +23,16 @@ Flask routes, HTML templates, static assets, authentication, SQLite models, a ba
 
 It differs from the public TriCleaver CLI: this snapshot uses an extended hammerhead template and different reporting defaults. Do not assume its design results reproduce the CLI release. Algorithm defaults are preserved here.
 
+## Linux hosting
+
+The Linux port supports Ubuntu 24.04 / Python 3.12 and mounts the application at
+`https://kharmalab.cloud/tricleaver`. See [Linux installation and operations](docs/LINUX.md).
+Native ViennaRNA 2.3.5 is built from checksum-pinned source with both MAXLOOP=30
+and MAXLOOP=300, preserving the legacy folding model. The Linux dependency lock,
+single-process Waitress web service, bounded serial workers, and systemd installation
+are separate from the Windows packaging below. Original scientific defaults remain
+300 individuals and 200 generations; verification uses 8 individuals and 4 generations.
+
 ## Reproduce on a new Windows machine
 
 The supported target is **Windows x64 with Python 3.9.19**. Follow the complete [installation and recovery guide](INSTALL.md), including prerequisites, exact downloads, email configuration, acceptance checks and troubleshooting.

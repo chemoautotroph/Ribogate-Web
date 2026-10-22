@@ -5,6 +5,7 @@ from runtime import ROOT, DATA_DIR
 from WS import app, start_scheduler
 
 import logging
+from logging.handlers import RotatingFileHandler
 from WS.email import send_email
 
 #Needed to parse Boolean command line arguments
@@ -20,7 +21,7 @@ def str2bool(v):
 
 #TO DO. Clean this up once I'm confident it works consistently.
 def setup_loggers():
-    file_handler = logging.FileHandler(DATA_DIR / 'server_logs.txt')
+    file_handler = RotatingFileHandler(DATA_DIR / 'server_logs.txt', maxBytes=5*1024*1024, backupCount=3)
     file_handler.setLevel(logging.INFO)
     file_handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
 
@@ -65,8 +66,8 @@ def configure_app(argv=None):
     parser.add_argument('--server-name', type=str, default=os.environ.get('RIBOGATE_SERVER_NAME', '127.0.0.1:' + os.environ.get('RIBOGATE_PORT', '8000')))
     parser.add_argument('--send-emails', type=str2bool, default=str2bool(os.environ.get('RIBOGATE_SEND_EMAILS', 'false')))
     parser.add_argument('--num-processes', type=int, default=int(os.environ.get('RIBOGATE_NUM_PROCESSES', min(os.cpu_count() or 1, 12))))
-    parser.add_argument('--quick-ea', type=str2bool, required=False, default=False) 
-    parser.add_argument('--store-jobs-days', type=int, required=False, default=-1) 
+    parser.add_argument('--quick-ea', type=str2bool, required=False, default=str2bool(os.environ.get('RIBOGATE_QUICK_EA', 'false')))
+    parser.add_argument('--store-jobs-days', type=int, required=False, default=int(os.environ.get('RIBOGATE_STORE_JOBS_DAYS', '-1')))
     parser.add_argument('--max-num-user-jobs', type=int, required=False, default=1) 
     parser.add_argument('--min-temp', type=float, required=False, default=20) 
     parser.add_argument('--max-temp', type=float, required=False, default=80) 
@@ -162,10 +163,16 @@ def configure_app(argv=None):
     cassette_segment_sequences['promoter'] = "GAATTTAATACGACTCACTATA" #An appropriate number of Gs will be dynamically added once the ribozyme sequence is known
     app.config['CASSETTE_SEGMENT_SEQUENCES'] = cassette_segment_sequences
 
+    from WS.hosting import configure_hosting
+    configure_hosting(app)
     return app
 
 
 def main():
+    import signal
+    def terminate(signum, frame):
+        raise SystemExit(0)
+    signal.signal(signal.SIGTERM, terminate)
     configure_app()
     from scripts.install_vienna import verify_binaries
     verify_binaries(Path(app.config['VIENNA_PATH']))
@@ -176,7 +183,13 @@ def main():
         db.create_all()
     setup_loggers()
     start_scheduler()
-    app.run(host=os.environ.get('RIBOGATE_HOST', '127.0.0.1'), port=int(os.environ.get('RIBOGATE_PORT', '8000')))
+    if os.environ.get('RIBOGATE_PRODUCTION', 'false').lower() == 'true':
+        from waitress import serve
+        serve(app, host='127.0.0.1', port=int(os.environ.get('RIBOGATE_PORT', '8000')),
+              threads=4, connection_limit=64, channel_timeout=30, max_request_body_size=128*1024,
+              url_scheme=app.config['PREFERRED_URL_SCHEME'], clear_untrusted_proxy_headers=True)
+    else:
+        app.run(host=os.environ.get('RIBOGATE_HOST', '127.0.0.1'), port=int(os.environ.get('RIBOGATE_PORT', '8000')))
 
     #For concordia
     #app.config["CUSTOM_URL_NAME"] = args.server_name

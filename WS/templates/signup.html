@@ -16,7 +16,8 @@
                 </div>
                 {% endif %}
                 {% endwith %}
-                <form method="POST" action="/signup">
+                <form method="POST" action="{{ url_for('auth.signup') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="card box-shadow my-3">
                         <div class="card-body">
                             <h5 class="card-title border-bottom border-gray pb-2 mb-3">Create a new account</h5>

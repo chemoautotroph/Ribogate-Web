@@ -23,6 +23,14 @@
     {%endblock%}
 
     <meta charset="utf-8">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <script>
+    $(document).ajaxSend(function(event, xhr, settings) {
+        if (!/^(GET|HEAD|OPTIONS|TRACE)$/.test(settings.type) && !settings.crossDomain) {
+            xhr.setRequestHeader('X-CSRFToken', document.querySelector('meta[name="csrf-token"]').content);
+        }
+    });
+    </script>
     <title>{{ title }}</title>
 
     <script>
@@ -109,7 +117,7 @@
 <body class="bg-light">
     <nav class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
-            <a class="navbar-brand" href="/">
+            <a class="navbar-brand" href="{{ url_for('main.index') }}">
                 <!--  <img src="/img/logo.svg" height="30" alt="Ribosoft"> -->
             </a>
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -118,6 +126,7 @@
 
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
                 <ul class="navbar-nav mr-auto">
+<li class="nav-item"><a class="nav-link" href="/ifold">iFold</a></li>
                     {% if current_user.is_authenticated %}
                     {% if request.endpoint != 'main.index' %}
                     {% if 'TS' in request.path %}
@@ -127,10 +136,10 @@
                     {% elif 'TC' in request.path %}
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('Server.Request_TC') }}">New request</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('Server.TC_jobs_summary') }}">Jobs</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('main.index_TS') }}">Switch to TruthSeqEr</a></li>
+                    {% if config.ENABLE_TRUTHSEQER %}<li class="nav-item"><a class="nav-link" href="{{ url_for('main.index_TS') }}">Switch to TruthSeqEr</a></li>{% endif %}
                     {% endif %}
                     {% endif %}
-                    <li class="nav-item">          <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>                    </li>
+                    <li class="nav-item"><form method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn nav-link" type="submit">Logout</button></form></li>
                     {% else %}
                     <li class="nav-item">          <a class="nav-link" href="{{ url_for('auth.login') }}">Login</a>                    </li>
                     <li class="nav-item">          <a class="nav-link" href="{{ url_for('auth.signup') }}">Signup</a>                    </li>

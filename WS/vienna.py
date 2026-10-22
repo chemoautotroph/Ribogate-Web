@@ -4,6 +4,9 @@ This code could be modified to interface with other folders, so look as they out
 '''
 
 import subprocess
+import os
+import re
+from pathlib import Path
 from collections import defaultdict
 
 def parse_dot_bracket(dot_bracket):
@@ -64,6 +67,8 @@ def fold(tasks, bool_300, folding_temp, num_strands, vienna_path):
     Therefore, I have do versions of RNAFold and RNACofold: the vanilla version and the '300' version.
     '''
 
+    if os.name != 'nt':
+        return fold_linux(tasks, bool_300, folding_temp, num_strands, vienna_path)
     input_data = ''
     for task in tasks:
         seq        = task[0]
@@ -76,9 +81,9 @@ def fold(tasks, bool_300, folding_temp, num_strands, vienna_path):
     else:
         str300   = ''
     if num_strands == 1:
-        app_name = "\RNAfold"
+        app_name = "\\RNAfold"
     else:
-        app_name = "\RNACofold"
+        app_name = "\\RNACofold"
 
     p1 = subprocess.Popen([vienna_path + app_name + str300 + ".exe","-p","-C","--noPS","--bppmThreshold=1e-5", "--temp=" + str(folding_temp)], stdin=subprocess.PIPE,stdout=subprocess.PIPE)   
     
@@ -144,4 +149,45 @@ def fold(tasks, bool_300, folding_temp, num_strands, vienna_path):
         else:
             processed_results.append((mfe_db, bppm, mfe_ad, mfe_energy)) #RNA CoFold doesn't output an ensemble diversity value
     return processed_results
+
+
+def fold_linux(tasks, large, temperature, strands, directory):
+    """Read the native 2.3.5 CLI output and the patched stdout probability list."""
+    name = ('RNAfold' if strands == 1 else 'RNAcofold') + ('300' if large else '')
+    payload = ''.join(sequence + '\n' + constraint + '\n' for sequence, constraint in tasks)
+    result = subprocess.run(
+        [str(Path(directory) / name), '-p', '-C', '--noPS', '--bppmThreshold=1e-5',
+         '--temp=' + str(temperature)], input=payload, text=True, capture_output=True,
+        timeout=int(os.environ.get('RIBOGATE_FOLD_TIMEOUT', '300')), check=True)
+    lines = result.stdout.splitlines()
+    starts = [i for i, line in enumerate(lines) if re.fullmatch('[ACGUTN&]+', line)]
+    if len(starts) != len(tasks):
+        raise RuntimeError('Native ViennaRNA returned an unexpected number of structures')
+    starts.append(len(lines))
+    outputs = []
+    for index, (begin, end) in enumerate(zip(starts, starts[1:])):
+        block = lines[begin:end]
+        match = re.fullmatch(r'([.()&]+)\s+\(\s*([-+0-9.]+)\)', block[1])
+        if not match:
+            raise RuntimeError('Invalid native ViennaRNA MFE output')
+        structure, energy = match.group(1), float(match.group(2))
+        if len(structure.replace('&', '')) != len(tasks[index][0].replace('&', '')):
+            raise RuntimeError('Native ViennaRNA structure length mismatch')
+        probabilities = defaultdict(int)
+        for line in block[block.index('BPPM start') + 1:block.index('BPPM end')]:
+            first, second, square_root = line.split()
+            a, b = int(first), int(second)
+            probabilities[a, b] = probabilities[b, a] = float(square_root) ** 2
+        # Retain the legacy indexing, including its unused terminal '&' slot.
+        for base in range(1, len(tasks[index][0]) + 1):
+            unpaired = 1 - sum(p for (a, b), p in probabilities.items() if a == base and b is not None)
+            probabilities[base, None] = probabilities[None, base] = unpaired
+        output = (structure, probabilities, parse_dot_bracket(structure), energy)
+        if strands == 1:
+            diversity = re.search(r'ensemble diversity\s+([-+0-9.]+)', '\n'.join(block))
+            if not diversity:
+                raise RuntimeError('Missing native ViennaRNA ensemble diversity')
+            output += (float(diversity.group(1)),)
+        outputs.append(output)
+    return outputs
 

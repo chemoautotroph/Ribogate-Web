@@ -12,7 +12,8 @@ MANIFEST = ROOT / 'vienna-manifest.json'
 
 
 def verify_binaries(directory):
-    manifest = json.loads(MANIFEST.read_text(encoding='utf-8'))
+    manifest_path = MANIFEST if os.name == 'nt' else Path(directory) / 'linux-manifest.json'
+    manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
     for item in manifest['files']:
         path = Path(directory) / item['name']
         if not path.is_file():

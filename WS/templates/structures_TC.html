@@ -96,7 +96,7 @@ var prevState = 0;
 var state = 0;
 
 //Initialize
-$.getJSON('/structures_JSON', {
+$.getJSON('{{ url_for('Server.structures_json') }}', {
 	state:0, ind_id:ind_id, job: job, gen:gen, sub_app:"TC"}, function(data){
 	updateResults(data);
 	});
@@ -232,7 +232,7 @@ $("body").on("change", 'input[type=radio][name=stateSel]', function(){
 		state = $('input[name=stateSel]:checked').val();
 		prevState = state; //Used just for esthetic purposes so the dynamically created check box button remains checked
 
-		$.getJSON('/structures_JSON', {
+		$.getJSON('{{ url_for('Server.structures_json') }}', {
 			state:state, ind_id:ind_id, job: job, gen:gen, sub_app:"TC"}, function(data){
 			updateResults(data);
 			});

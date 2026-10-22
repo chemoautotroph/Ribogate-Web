@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, jsonify, make_response, redirect, url_for, send_file, flash
+from flask import Blueprint, render_template, request, jsonify, make_response, redirect, url_for, send_file, flash, abort
 from .models import *
 from flask_login import current_user, login_required
 from datetime import datetime, timedelta
@@ -112,7 +112,8 @@ def structures_json():
 
     #If a new individual was queried, retrieve it from db and cache it. Otherwise retrieve the cached individual.
     if ind_id != session['prev_ind_id'] or job_id != session['prev_job_id']:
-        ind = Individuals.query.filter(Individuals.job == job_id, Individuals.cur_gen == gen, Individuals.id == ind_id).filter(Individuals.pop_type.in_([1])).all()[0].object  
+        row = Individuals.query.filter(Individuals.job == job_id, Individuals.cur_gen == gen, Individuals.id == ind_id).filter(Individuals.pop_type.in_([1])).first_or_404()
+        ind = row.object
         session['prev_job_id'] = job_id
         session['prev_state_id'] = 0
         session['prev_ind_id'] = ind_id
@@ -122,6 +123,8 @@ def structures_json():
         session['prev_state_id'] = state_id
         print("Retrieved cached individual")
     
+    if sub_app_name not in ('TC','TS') or state_id < 0 or state_id >= len(ind.mfe_dbs):
+        abort(400)
     pheno = ind.mfe_dbs[state_id]
     
 
@@ -329,7 +332,7 @@ def jobs_summary_json():
     records = []
     for i in range(num_jobs):
         job = jobs[i]
-        link = "/" + sub_app_name + "/job_details?id=" + str(job.id)
+        link = url_for("Server." + sub_app_name + "_job_details", id=job.id)
         progress = 100*(job.last_completed_gen+ 1) / job.num_gens
         if sub_app_name == "TC" and job.type== "TC":
             num_displayed_nucleotides = 75 #Truncate the shown mutant sequence to this number of nucleotides
@@ -511,7 +514,7 @@ def job_details():
     last_gen = job.last_completed_gen
     progress = (last_gen + 1) / job.num_gens
 
-    if 'application/json' in request.headers.get('Accept'):
+    if 'application/json' in request.headers.get('Accept', ''):
         
         page_num = request.args.get('page_num', 0, type=int)
 
@@ -520,7 +523,7 @@ def job_details():
         else:
             inds_ranked = []
         num_inds = len(inds_ranked)
-        links = ["/" + sub_app_name + "/structures" + "?ind_id=" + str(ind.id)  + "&gen=" + str(last_gen) + "&job=" + str(job_id) for ind in inds_ranked ]
+        links = [url_for("Server.structures_" + sub_app_name, ind_id=ind.id, gen=last_gen, job=job_id) for ind in inds_ranked]
     
         #Package the ribozymes into cassettes with associated color codes
         cassette_legend = prepare_cassette_legend(sub_app_name, app.config['CASSETTE_SEGMENTS'], app.config['CASSETTE_SEGMENT_COLORS'], job.environment)

@@ -59,6 +59,10 @@ def clear_jobs():
         db.session.commit()
 
 def scheduler():
+    import os
+    if os.name != 'nt':
+        from .linux_scheduler import scheduler as linux_scheduler
+        return linux_scheduler()
     bool_store  = 1
     initial_pop = None
     ea_job = None

@@ -4,6 +4,10 @@ from flask_login import login_user, logout_user, login_required, current_user
 from .models import User
 from . import db
 from datetime import datetime
+from urllib.parse import urlsplit
+import re
+from flask import session
+from markupsafe import Markup, escape
 from itsdangerous import URLSafeTimedSerializer
 from .email import send_email
 from WS import app
@@ -24,7 +28,7 @@ def signup():
 @auth.route('/login', methods=['POST'])
 def login_post():
     email = request.form.get('email')
-    password = request.form.get('password')
+    password = request.form.get('password', '')
     remember = True if request.form.get('remember') else False
 
     user = User.query.filter_by(email=email).first()
@@ -38,14 +42,19 @@ def login_post():
     if not user.confirmed:
         resend_url = url_for('auth.resend_confirmation', email=email, _external=True)
         print("resend_url", resend_url)
-        flash(f'Please confirm your account by clicking on the link emailed to you. <a href="{resend_url}">Click here to resend confirmation email.</a>', 'login_fail')
+        flash(Markup('Please confirm your account. <a href="{}">Resend confirmation email.</a>').format(resend_url), 'login_fail')
         return redirect(url_for('auth.login')) # if the user doesn't exist or password is wrong, reload the page
     
+    app.session_interface.regenerate(session)
+    session.clear()
     login_user(user, remember=remember) #Iif the above check passes, then we know the user has the right credentials
 
     next_url = request.form.get('next') #If the user came by clicking on the TC or TS button, redirect them to appropriate service
     if next_url:
-        return redirect(next_url)
+        parsed = urlsplit(next_url)
+        prefix = app.config['APPLICATION_ROOT'].rstrip('/')
+        if not parsed.netloc and not parsed.scheme and next_url.startswith(prefix + '/') and not next_url.startswith('//') and chr(92) not in next_url:
+            return redirect(next_url)
 
     #If the user clicked on login page directly, return them to home page
     return redirect(url_for('main.index'))
@@ -79,8 +88,11 @@ def send_confirmation_email(user):
 def signup_post():
     email = request.form.get('email')
     #name = request.form.get('name') #Kharma doesn't want name as input
-    password = request.form.get('password')
+    password = request.form.get('password', '')
     confirm_password = request.form.get('confirm_password')
+    if not email or not re.fullmatch(r'[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+', email) or len(email)>100 or not 8<=len(password)<=128:
+        flash('Enter a valid email and a password between 8 and 128 characters.', 'password_mismatch')
+        return redirect(url_for('auth.signup'))
 
     if password != confirm_password:
         flash('Passwords do not match', 'password_mismatch') #The 2nd entry 'password_mismatch' is used by HTML to differentiate between the two types of messages since they are processed differently on the client side
@@ -108,9 +120,11 @@ def signup_post():
 
     return redirect(url_for('auth.login'))
 
-@auth.route('/resend_confirmation', methods=['GET'])
+@auth.route('/resend_confirmation', methods=['GET','POST'])
 def resend_confirmation():
-    email = request.args.get('email')
+    if request.method == 'GET':
+        return render_template('resend_confirmation.html', email=request.args.get('email',''))
+    email = request.form.get('email')
     user = User.query.filter_by(email=email).first() # if this returns a user, then the email already exists in database
     if user:
         send_confirmation_email(user)
@@ -175,10 +189,10 @@ def reset_password(token):
         return redirect(url_for('auth.reset_password_request'))
     
     if request.method == 'POST':
-        password = request.form.get('password')
+        password = request.form.get('password', '')
         confirm_password = request.form.get('confirm_password')
 
-        if password != confirm_password:
+        if password != confirm_password or not 8 <= len(password) <= 128:
             flash('Passwords do not match. Please try again.', 'password_mismatch')
             return redirect(url_for('auth.reset_password', token=token))
         
@@ -212,8 +226,9 @@ def unconfirmed():
         return redirect(url_for('main.index'))
     return 'Please confirm your account!'
 
-@auth.route('/logout')
+@auth.route('/logout', methods=['POST'])
 @login_required
 def logout():
     logout_user()
+    session.clear()
     return redirect(url_for('main.index'))

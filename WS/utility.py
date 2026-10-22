@@ -1,4 +1,4 @@
-from multiprocessing import Pool
+from multiprocessing import get_context
 import numpy as np
 
 def multicore(tasks, func, num_processes, common_data):
@@ -12,12 +12,10 @@ def multicore(tasks, func, num_processes, common_data):
         n = num_tasks_per_process_floor
         #processes_tasks = [tasks_whole[i:i + n] for i in range(0, num_tasks_total_floor, n)]
         processes_tasks = [(tasks_whole[i:i + n], common_data) for i in range(0, num_tasks_total_floor, n)]
-        pool = Pool(num_processes) 
-        processes_results = pool.map(func, processes_tasks)
+        with get_context('spawn').Pool(num_processes) as pool:
+            processes_results = pool.map(func, processes_tasks)
         for p in processes_results:
             results += p
-        pool.close()
-        pool.join()
 
     if len(tasks_remainder) != 0:
         results += func([tasks_remainder, common_data])
