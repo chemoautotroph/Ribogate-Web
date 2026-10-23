@@ -97,7 +97,7 @@ rule. Do not strip the `/tricleaver` prefix. No new DNS record is needed for thi
 existing hostname. The VM holds only the tunnel runtime credential; editing published
 routes requires the Cloudflare account or a narrowly scoped management token.
 
-Verify `https://kharmalab.cloud/tricleaver/healthz` and the full signup/login/task flow
+Verify `https://kharmalab.cloud/tricleaver/healthz` and the full Google sign-in/task flow
 after adding the route. Loopback health can be checked before the route exists:
 
 ```sh
@@ -106,13 +106,12 @@ curl -f -H 'Host: kharmalab.cloud' http://127.0.0.1:8000/tricleaver/healthz
 
 ## Email
 
-Google sign-in is available independently of email delivery. See
+Google is the only sign-in method and is independent of email delivery. See
 [Google OAuth setup and update instructions](GOOGLE_OAUTH.md) for its separate client,
 callback URL, existing-account linking and data-preserving Linux updater.
 
-Email is disabled initially. New accounts can log in immediately; users view results
-on the Jobs page. The UI explains that email notifications and password-reset emails
-are unavailable. To enable email, use `sudoedit /etc/tricleaver/environment`, configure
+Email notifications are disabled initially. Google sign-in creates accounts as needed;
+users view results on the Jobs page. Local password registration and reset are removed. To enable email, use `sudoedit /etc/tricleaver/environment`, configure
 `RIBOGATE_EMAIL_FROM` with a provider-verified sender, and set **one** provider:
 
 - `RIBOGATE_EMAIL_SERVICE=sendgrid` and `SENDGRID_API_KEY`; or
@@ -120,7 +119,7 @@ are unavailable. To enable email, use `sudoedit /etc/tricleaver/environment`, co
 
 Then set `RIBOGATE_SEND_EMAILS=true` and restart the service. Both adapters are available;
 only the selected provider requires its key. Keep keys out of Git and chat. Actual inbox
-delivery has not been tested; adapter, confirmation and reset tests mock delivery.
+delivery has not been tested; adapter and job-notification tests mock delivery.
 
 ## Operations, backup and rollback
 
@@ -149,7 +148,8 @@ unpaired-position constraints. MFE structures, energies and ensemble diversity m
 maximum probability difference was approximately 5.6e-16. This is tested numerical
 agreement, not a proof for every input or a biological validation.
 
-Real 8-individual/4-generation jobs passed signup/login, two-step submission, scheduler,
+The original Linux validation used local signup/login. Real 8-individual/4-generation
+jobs passed two-step submission, scheduler,
 nonempty results, structure/state data, assets, Excel export, restart persistence,
 active cancellation, active-job restart recovery, timeout and queue release. CSRF,
 cross-user result/cancellation denial, mounted URLs and disabled debug/TS routes were

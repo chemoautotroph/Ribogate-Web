@@ -68,6 +68,7 @@ def main():
                    RIBOGATE_HOST='127.0.0.1', RIBOGATE_PORT=str(port),
                    RIBOGATE_SERVER_NAME=f'127.0.0.1:{port}',
                    RIBOGATE_SEND_EMAILS='false', RIBOGATE_NUM_PROCESSES='2',
+                   RIBOGATE_GOOGLE_CLIENT_ID='', RIBOGATE_GOOGLE_CLIENT_SECRET='',
                    RIBOGATE_VIENNA_PATH=str(binary_dir), PYTHONUNBUFFERED='1')
         prefix = '/tricleaver'
         env.update(RIBOGATE_BASE_PATH=prefix, RIBOGATE_PRODUCTION='true' if os.name != 'nt' else 'false',
@@ -78,13 +79,49 @@ def main():
 
         def csrf(client, path='/login'):
             page=client.get(base+path)
-            token=re.search(r'name="csrf_token"[^>]*value="([^\"]+)"',page.text)
+            token=re.search(r'name="csrf-token" content="([^\"]+)"',page.text)
             check(token is not None, 'Missing CSRF token: '+path)
             return token.group(1)
 
         def post(client, path, data):
             data=dict(data,csrf_token=csrf(client))
             return client.post(base+path,data=data,allow_redirects=False)
+
+        def authenticate(client, email, subject):
+            # OIDC/JWT verification has its own tests. Seed a verified identity/session
+            # only in this temporary database to exercise the real HTTP design workflow.
+            fixture = '''
+import json,os,sys
+from pathlib import Path
+data=Path(os.environ['RIBOGATE_DATA_DIR']).resolve()
+assert data.name=='data' and data.parent.name.startswith('ribogate-smoke-')
+from runserver import configure_app
+from WS import app,db
+from WS.models import User,GoogleIdentity
+configure_app([])
+with app.app_context():
+    identity=GoogleIdentity.query.filter_by(subject=sys.argv[2]).first()
+    if identity:
+        user=db.session.get(User,identity.user_id)
+    else:
+        user=User(email=sys.argv[1],name='Smoke test',password=None,confirmed=True)
+        db.session.add(user)
+        db.session.flush()
+        db.session.add(GoogleIdentity(user_id=user.id,subject=sys.argv[2],email=user.email))
+        db.session.commit()
+    user_id=user.id
+client=app.test_client()
+origin='http://'+app.config['SERVER_NAME']
+with client.session_transaction(path='/tricleaver/',base_url=origin) as session:
+    session['_user_id']=str(user_id)
+    session['_fresh']=True
+    session['_google_subject']=sys.argv[2]
+cookie=client.get_cookie('tricleaver_session',domain='127.0.0.1',path='/tricleaver')
+print(json.dumps({'session':cookie.value}))
+'''
+            result=subprocess.check_output([sys.executable,'-c',fixture,email,subject],
+                                           cwd=ROOT,env=env,text=True)
+            client.cookies.set('tricleaver_session',json.loads(result)['session'],domain='127.0.0.1',path=prefix)
 
 
         def start():
@@ -115,12 +152,10 @@ def main():
         server = start()
         session = requests.Session()
         session.trust_env = False
-        email, password = 'smoke@example.invalid', secrets.token_urlsafe(24)
+        email = 'smoke@example.invalid'
         check(session.get(base + '/TC', allow_redirects=False).status_code == 302,
               'Anonymous TC access was not redirected')
-        check(post(session, '/signup', {'email':email, 'password':password,
-              'confirm_password':password}).status_code == 302, 'Signup failed')
-        check(post(session, '/login', {'email':email, 'password':password}).status_code == 302, 'Login failed')
+        authenticate(session,email,'smoke-google-user')
         check(session.get(base + '/TC').status_code == 200, 'Authenticated TC page failed')
         page = session.get(base + '/TC/request')
         token = re.search(r'name="csrf_token"[^>]*value="([^"]+)"', page.text)
@@ -151,7 +186,7 @@ def main():
             check(server.poll() is None, 'Server exited while designing')
             time.sleep(1)
         check(job is not None and job['status'] == 'Completed', 'TC design did not complete before timeout')
-        report['checks'].append('Signup, login, CSRF-validated two-step TC submission and scheduler completion')
+        report['checks'].append('Isolated Google identity/session fixture, CSRF-validated two-step TC submission and scheduler completion; OIDC verified separately')
         job_id = job['id']
         details = session.get(base + f'/TC/job_details?id={job_id}')
         check(details.status_code == 200, 'Result HTML failed')
@@ -190,11 +225,10 @@ def main():
         report['tc_debug_results'] = len(records)
         outsider=requests.Session()
         outsider.trust_env=False
-        check(outsider.post(base+'/signup',data={'email':'other@example.invalid','password':password,'confirm_password':password}).status_code==400,'Signup accepted missing CSRF')
+        check(outsider.post(base+'/auth/google/start',data={}).status_code==400,'Google start accepted missing CSRF')
         for path in (f'/csv?id={job_id}',f'/TC/job_details?id={job_id}', '/structures_JSON?job='+str(job_id)):
             check(outsider.get(base+path,allow_redirects=False).status_code==302,'Anonymous result access')
-        post(outsider,'/signup',{'email':'other@example.invalid','password':password,'confirm_password':password})
-        post(outsider,'/login',{'email':'other@example.invalid','password':password})
+        authenticate(outsider,'other@example.invalid','smoke-google-outsider')
         for path in (f'/csv?id={job_id}',f'/TC/job_details?id={job_id}', '/structures_JSON?job='+str(job_id)):
             check(outsider.get(base+path,allow_redirects=False).status_code==404,'Cross-user result access')
         check(post(outsider,'/TC/jobs_summary_json',{'job_id_to_delete':job_id}).status_code==404,'Cross-user cancellation')
@@ -205,8 +239,8 @@ def main():
         check(requests.get(origin+'/login').status_code==404,'App served outside mount point')
         check(requests.get(base,allow_redirects=False).status_code==308,'Missing mount redirect')
         for target in ('https://example.invalid/','//example.invalid/','/ifold'):
-            response=post(outsider,'/login',{'email':'other@example.invalid','password':password,'next':target})
-            check(response.headers.get('Location') not in (target,), 'Unsafe login redirect')
+            response=post(outsider,'/login',{'email':'other@example.invalid','password':'unused','next':target})
+            check(response.status_code==405, 'Password login endpoint still available')
         check('/tricleaver/' in job['link'],'Unprefixed job URL')
         report['checks'].append('Production WSGI mount, CSRF, ownership, cancellation protection, redirect confinement and disabled debug/TS routes')
 
@@ -214,7 +248,7 @@ def main():
         server = start()
         fresh = requests.Session()
         fresh.trust_env = False
-        post(fresh, '/login', {'email':email, 'password':password})
+        authenticate(fresh,email,'smoke-google-user')
         restored = fresh.get(base + '/TC/jobs_summary_json').json()
         check(restored[0]['status'] == 'Completed', 'Completed job not preserved after restart')
         check(fresh.get(base + f'/csv?id={job_id}').status_code == 200, 'Restored export failed')
@@ -267,14 +301,14 @@ def main():
             stop(server)
             no_live_group(groups)
             server=start()
-            post(fresh,'/login',{'email':email,'password':password})
+            authenticate(fresh,email,'smoke-google-user')
             wait_status(fresh,ident,'Completed',args.timeout)
             report['checks'].append('Interrupted running job resumes after restart; previous descendants are gone')
 
             stop(server)
             env['RIBOGATE_MAX_JOB_SECONDS']='1'
             server=start()
-            post(fresh,'/login',{'email':email,'password':password})
+            authenticate(fresh,email,'smoke-google-user')
             ident=submit(fresh)
             wait_status(fresh,ident,'Timed out')
             time.sleep(2)

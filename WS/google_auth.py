@@ -8,7 +8,8 @@ import time
 from urllib.parse import unquote, urlsplit
 
 from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, session, url_for
-from flask_login import current_user, login_fresh, login_required, login_user
+from flask_login import current_user, login_required, login_user
+from werkzeug.security import check_password_hash
 from sqlalchemy import delete, func
 from sqlalchemy.exc import IntegrityError
 
@@ -18,6 +19,11 @@ from .models import GoogleIdentity, GoogleLoginAttempt, User
 google_auth = Blueprint('google_auth', __name__)
 DISCOVERY_URL = 'https://accounts.google.com/.well-known/openid-configuration'
 ATTEMPT_SECONDS = 600
+
+
+class LinkRequired(Exception):
+    def __init__(self, user_id):
+        self.user_id = user_id
 
 
 def configure_google_oauth(app):
@@ -88,13 +94,9 @@ def account():
 @google_auth.post('/auth/google/start')
 def start():
     google = provider()
-    linking_user = None
     if current_user.is_authenticated:
-        if not current_user.password or not login_fresh():
-            return fail('Sign in with your password again before linking Google.')
-        if GoogleIdentity.query.filter_by(user_id=current_user.id).first():
-            return fail('This TriCleaver account already has Google sign-in linked.')
-        linking_user = current_user.id
+        return redirect(url_for('main.index'))
+    session.pop('_pending_google_link', None)
     state = secrets.token_urlsafe(32)
     binding = session.setdefault('_google_binding', secrets.token_urlsafe(32))
     # A new attempt replaces this browser's previous one and removes expired attempts.
@@ -104,7 +106,7 @@ def start():
         if key.startswith('_state_google_'):
             session.pop(key)
     attempt = GoogleLoginAttempt(state_hash=digest(state), binding_hash=digest(binding),
-        expires_at=time.time() + ATTEMPT_SECONDS, user_id=linking_user,
+        expires_at=time.time() + ATTEMPT_SECONDS, user_id=None,
         next_path=safe_next(request.form.get('next')))
     db.session.add(attempt)
     db.session.commit()
@@ -120,7 +122,7 @@ def start():
         return fail()
 
 
-def resolve_identity(claims, linking_user):
+def resolve_identity(claims):
     subject, email = claims.get('sub'), claims.get('email')
     if (claims.get('email_verified') is not True or not isinstance(subject, str)
             or not 1 <= len(subject) <= 255 or not isinstance(email, str)
@@ -129,16 +131,7 @@ def resolve_identity(claims, linking_user):
     email = email.lower()
     identity = GoogleIdentity.query.filter_by(subject=subject).first()
     same_email = User.query.filter(func.lower(User.email) == email).first()
-    if linking_user is not None:
-        user = db.session.get(User, linking_user)
-        if not user or not user.password or user.email.lower() != email:
-            raise ValueError('Choose the Google account with the same email as your TriCleaver account.')
-        if identity and identity.user_id != user.id:
-            raise ValueError('This Google account is already linked to another TriCleaver account.')
-        existing = GoogleIdentity.query.filter_by(user_id=user.id).first()
-        if existing and existing.subject != subject:
-            raise ValueError('This TriCleaver account already has Google sign-in linked.')
-    elif identity:
+    if identity:
         user = db.session.get(User, identity.user_id)
         if not user:
             raise ValueError('The linked TriCleaver account is unavailable.')
@@ -146,8 +139,9 @@ def resolve_identity(claims, linking_user):
             raise ValueError('This Google email is already used by another TriCleaver account.')
         user.email = email
     elif same_email:
-        raise ValueError('This email already has a TriCleaver account. Sign in with your password, '
-                         'then open Account to link Google.')
+        if same_email.password and not GoogleIdentity.query.filter_by(user_id=same_email.id).first():
+            raise LinkRequired(same_email.id)
+        raise ValueError('This email is already associated with another Google identity. Contact the site administrator.')
     else:
         user = User(email=email, name=str(claims.get('name') or 'Google user')[:1000],
                     password=None, confirmed=True)
@@ -158,8 +152,50 @@ def resolve_identity(claims, linking_user):
         db.session.add(identity)
     identity.email = email
     user.confirmed = True
+    user.password = None
     db.session.commit()
     return user
+
+
+def complete_login(user, subject, next_path):
+    current_app.session_interface.regenerate(session)
+    session.clear()
+    session['_remember'] = 'clear'
+    session['_google_subject'] = subject
+    login_user(user, remember=False, fresh=True)
+    return redirect(safe_next(next_path))
+
+
+@google_auth.route('/auth/google/link', methods=['GET', 'POST'])
+def link_existing():
+    provider()
+    pending = session.get('_pending_google_link')
+    if not pending or pending['expires_at'] < time.time() or pending['attempts'] >= 5:
+        session.pop('_pending_google_link', None)
+        return fail('Start Google sign-in again to connect your existing account.')
+    if request.method == 'GET':
+        return render_template('google_link.html', email=pending['email'], title='Connect your TriCleaver account')
+    user = db.session.get(User, pending['user_id'])
+    password = request.form.get('password', '')
+    if (not user or not user.password or user.email.lower() != pending['email']
+            or not 1 <= len(password) <= 128 or not check_password_hash(user.password, password)):
+        pending['attempts'] += 1
+        session['_pending_google_link'] = pending
+        flash('The previous password did not match. Please try again or contact the site administrator.', 'login_fail')
+        return redirect(url_for('google_auth.link_existing'))
+    if (GoogleIdentity.query.filter_by(user_id=user.id).first()
+            or GoogleIdentity.query.filter_by(subject=pending['sub']).first()):
+        session.pop('_pending_google_link', None)
+        return fail('This account is already connected. Please start Google sign-in again.')
+    db.session.add(GoogleIdentity(user_id=user.id, subject=pending['sub'], email=pending['email']))
+    user.password = None
+    user.confirmed = True
+    try:
+        db.session.commit()
+    except IntegrityError:
+        session.pop('_pending_google_link', None)
+        return fail('This account is already connected. Please start Google sign-in again.')
+    return complete_login(user, pending['sub'], pending['next_path'])
 
 
 @google_auth.get('/auth/google/callback')
@@ -177,10 +213,8 @@ def callback():
     db.session.commit()
     if claimed is None:
         return fail('Google sign-in expired or was already used. Please try again.')
-    linking_user, next_path = claimed
-    if ((linking_user is not None and (not current_user.is_authenticated
-            or current_user.id != linking_user or not login_fresh()))
-            or (linking_user is None and current_user.is_authenticated)):
+    previous_linking_user, next_path = claimed
+    if previous_linking_user is not None or current_user.is_authenticated:
         session.pop('_state_google_' + state, None)
         return fail('Your sign-in session changed. Please start Google sign-in again.')
     try:
@@ -200,17 +234,20 @@ def callback():
         current_app.logger.warning('Google authorization callback failed (%s)', type(error).__name__)
         return fail()
     try:
-        user = resolve_identity(claims, linking_user)
+        user = resolve_identity(claims)
+    except LinkRequired as required:
+        # Google identity was verified, but email equality alone must not merge accounts.
+        current_app.session_interface.regenerate(session)
+        session.clear()
+        session['_remember'] = 'clear'
+        session['_pending_google_link'] = {
+            'sub': claims['sub'], 'email': claims['email'].lower(), 'user_id': required.user_id,
+            'expires_at': time.time() + 300, 'attempts': 0, 'next_path': safe_next(next_path),
+        }
+        return redirect(url_for('google_auth.link_existing'))
     except ValueError as error:
         return fail(str(error))
     except IntegrityError:
         return fail('This Google account or email is already linked. Please sign in again.')
     # Provider tokens remain local to this request; only the application user ID is retained.
-    current_app.session_interface.regenerate(session)
-    session.clear()
-    session['_remember'] = 'clear'
-    login_user(user, remember=False, fresh=True)
-    if linking_user is not None:
-        flash('Google sign-in is now linked to your TriCleaver account.', 'signup_success')
-        return redirect(url_for('google_auth.account'))
-    return redirect(safe_next(next_path))
+    return complete_login(user, claims['sub'], next_path)

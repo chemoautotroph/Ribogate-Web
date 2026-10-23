@@ -1,0 +1,36 @@
+{
+  "timestamp_utc": "2026-10-23T16:47:00.707749+00:00",
+  "auth_mode": "google",
+  "oauth": {
+    "passed": true,
+    "tests_run": 15,
+    "failures": 0,
+    "errors": 0,
+    "provider": "mock HTTP with real Authlib, PKCE and signed RS256 tokens",
+    "live_google_login_tested": false
+  },
+  "lifecycle": {
+    "timestamp_utc": "2026-10-23T16:45:39.215319+00:00",
+    "python": "3.12.3",
+    "platform": "Linux-6.8.0-147-generic-x86_64-with-glibc2.39",
+    "mail_sent": false,
+    "checks": [
+      "All four downloaded executables produced parseable structures and BPPMs",
+      "Isolated Google identity/session fixture, CSRF-validated two-step TC submission and scheduler completion; OIDC verified separately",
+      "Nonempty results, structure HTML/JSON/state changes, static assets and valid XLSX export",
+      "Production WSGI mount, CSRF, ownership, cancellation protection, redirect confinement and disabled debug/TS routes",
+      "Server restart preserves user, completed job and downloadable results",
+      "Running-job cancellation removes its Linux process group",
+      "Interrupted running job resumes after restart; previous descendants are gone",
+      "Durable runtime deadline terminates the job and releases the queue"
+    ],
+    "passed": true,
+    "vienna_upstream_commit": "ViennaRNA-2.3.5",
+    "tc_debug_results": 8
+  },
+  "notification_adapters_and_job_links": "passed with mocked delivery; no email sent",
+  "data_policy": "No old Windows database imported; preserve Linux users and jobs; same-email password accounts require Google proof plus one-time previous password; retain user ID and remove password hash after linking",
+  "production_updated": false,
+  "real_google_account_signin_tested": false,
+  "requirements_lock_sha256": "5161570a2fecbab462ac0d282b962e2b61dafd6304a6d11128e624bec978ecae"
+}

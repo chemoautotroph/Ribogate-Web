@@ -1,7 +1,6 @@
 # Google sign-in for TriCleaver
 
-TriCleaver supports Google OpenID Connect sign-in alongside its existing email/password
-accounts. It uses its own Google OAuth Web client, database, session secret and
+TriCleaver uses Google OpenID Connect as its only sign-in method. It uses its own Google OAuth Web client, database, session secret and
 `tricleaver_session` cookie with Path `/tricleaver`. It never reads iFold credentials,
 users, sessions or jobs. Both applications still share a web origin: Cookie Path is
 cookie routing, not a security boundary against JavaScript in another application
@@ -70,11 +69,11 @@ sudo python3 /opt/tricleaver/app/deploy/configure-google.py /path/to/google-clie
 sudo systemctl restart tricleaver-web
 ```
 
-When both variables are empty/missing, Google buttons are hidden and the existing
-password login remains available. An incomplete pair prevents startup so that a
+When both variables are empty/missing, sign-in is unavailable and the login page
+asks users to contact the administrator. An incomplete pair prevents startup so that a
 configuration error is visible to the administrator. Non-Linux developers using the
-original Windows dependency lock can leave Google disabled, or install the pinned
-`Authlib==1.9.1` dependency separately to exercise this feature.
+original Windows dependency lock must install the pinned `Authlib==1.9.1` dependency
+and configure a Google Web client to enable sign-in on this branch.
 
 ## User flow
 
@@ -83,19 +82,26 @@ original Windows dependency lock can leave Google disabled, or install the pinne
   its email. A verified email change updates the address unless another account
   already uses it.
 - An existing email/password account is never merged solely because its email
-  matches Google. Sign in with its password, open **Account**, then use the Google
-  button and choose the same email address. Existing designs stay with that account.
+  matches Google. Start Google sign-in with the same email; after Google verifies
+  that identity, enter the previous TriCleaver password once to connect the account.
+  This step expires after five minutes or five failed guesses. The account ID and
+  existing designs remain unchanged, and the password hash is removed.
 - One Google identity can belong to only one TriCleaver account. One TriCleaver
-  account can link one Google identity. A linked password account retains its password.
-- Google-only accounts use Google to sign in; the local password form fails safely.
+  account can link one Google identity. Successful Google sign-in removes any remaining
+  local password hash on an already linked account.
+- Email/password sign-in, registration, confirmation and password-reset routes are
+  removed. Old sessions and remember-me cookies require a new Google sign-in.
   Google sign-in does not depend on the email-sending API keys.
+- This Linux installation began with a fresh database; the old Windows user database
+  was not imported. Updates preserve accounts and designs created on the Linux server.
 
 ## Validation and rollout
 
 `scripts/verify_google_oauth.py` uses temporary data and a mocked Google HTTP provider,
 with real Authlib OAuth processing and real RS256 signatures. It checks PKCE, required
 claims, issuer/audience/authorized party/expiry/nonce/signature failures, verified
-email, explicit linking, stable subjects, CSRF, session rotation, concurrent callback
+email, Google-first account migration, removed password endpoints, rejection of old
+sessions/remember cookies, stable subjects, CSRF, session rotation, concurrent callback
 consumption, expired/replayed/cancelled attempts and application-scoped redirects.
 OAuth state expires after ten minutes and is consumed atomically in the database.
 Tokens are not retained in application sessions or databases.
@@ -112,8 +118,9 @@ the previous app/venv paths, root-only environment and a stopped-service data ar
 An update failure after stopping the service attempts to restore the prior code and
 environment automatically. Inspect the service journal if recovery is incomplete.
 The added tables are backward compatible, so code rollback need not replace user data.
-To disable Google while keeping this version, clear both Google variables in the
-environment and restart TriCleaver. Preserve backups privately.
+Clearing both Google variables disables all sign-in; it does not restore password
+login. Preserve backups privately. Users migrated to Google no longer have a local
+password hash, including after a code-only rollback.
 
 References: [Google OpenID Connect](https://developers.google.com/identity/openid-connect/openid-connect),
 [Authlib Flask integration](https://docs.authlib.org/en/latest/oauth2/client/web/flask.html),

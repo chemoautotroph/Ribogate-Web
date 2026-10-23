@@ -133,11 +133,10 @@ class GoogleOAuthTests(unittest.TestCase):
             db.session.commit()
             return user.id
 
-    def password_login(self, email='person@gmail.com'):
-        response = self.client.post(PREFIX + '/login', base_url=BASE,
-            headers={'Referer': BASE + PREFIX + '/login'}, data={
-            'csrf_token': self.csrf(), 'email': email, 'password': 'test-password-123'})
-        self.assertEqual(response.location, PREFIX + '/')
+    def link(self, password='test-password-123'):
+        return self.client.post(PREFIX + '/auth/google/link', base_url=BASE,
+            headers={'Referer': BASE + PREFIX + '/auth/google/link'}, data={
+            'csrf_token': self.csrf(path='/auth/google/link'), 'password': password})
 
     def logout(self):
         self.client.post(PREFIX + '/logout', base_url=BASE,
@@ -149,9 +148,11 @@ class GoogleOAuthTests(unittest.TestCase):
             self.assertNotIn('_user_id', session)
 
     def test_button_csrf_and_disabled_mode(self):
-        for path in ('/login', '/signup'):
-            self.assertIn('Continue with Google', self.get(path).text)
-            self.assertIn(PREFIX + '/auth/google/start', self.get(path).text)
+        self.assertIn('Continue with Google', self.get('/login').text)
+        self.assertIn(PREFIX + '/auth/google/start', self.get('/login').text)
+        self.assertNotIn('type="password"', self.get('/login').text)
+        self.assertNotIn('type="email"', self.get('/login').text)
+        self.assertEqual(self.get('/signup').location, PREFIX + '/login')
         self.assertEqual(self.client.post(PREFIX + '/auth/google/start', base_url=BASE).status_code, 400)
         self.assertEqual(self.get('/auth/google/start').status_code, 405)
         app.config['GOOGLE_LOGIN_ENABLED'] = False
@@ -213,7 +214,7 @@ class GoogleOAuthTests(unittest.TestCase):
         self.assertIsNone(self.client.get_cookie('ifold_session', domain='kharmalab.cloud', path='/ifold'))
         self.assertEqual(self.client.get('/ifold', base_url=BASE).status_code, 404)
 
-    def test_new_user_repeat_login_subject_and_password_fallback(self):
+    def test_new_user_repeat_login_subject_and_no_password_fallback(self):
         flow = self.start(next_path=PREFIX + '/account')
         old_cookie = self.client.get_cookie('tricleaver_session', domain='kharmalab.cloud', path=PREFIX).value
         response = self.finish(flow)
@@ -236,7 +237,7 @@ class GoogleOAuthTests(unittest.TestCase):
         self.password_login_attempt = self.client.post(PREFIX + '/login', base_url=BASE,
             headers={'Referer': BASE + PREFIX + '/login'},
             data={'csrf_token': self.csrf(), 'email': 'person@gmail.com', 'password': 'anything'})
-        self.assertEqual(self.password_login_attempt.location, PREFIX + '/login')
+        self.assertEqual(self.password_login_attempt.status_code, 405)
         response = self.finish(self.start(), changes={'email': 'new-email@gmail.com'})
         self.assertEqual(response.location, PREFIX + '/')
         with app.app_context():
@@ -288,22 +289,31 @@ class GoogleOAuthTests(unittest.TestCase):
                 with app.app_context():
                     self.assertEqual(User.query.count(), 0)
 
-    def test_existing_email_requires_explicit_authenticated_link(self):
+    def test_existing_email_requires_google_and_one_time_password_link(self):
         user_id = self.local_user()
-        self.finish(self.start())
+        with app.app_context():
+            db.session.add(Jobs(user_id=user_id, status='Completed', type='TC'))
+            db.session.commit()
+            job_id = Jobs.query.one().id
+        response = self.finish(self.start())
+        self.assertEqual(response.location, PREFIX + '/auth/google/link')
         self.assert_anonymous()
         with app.app_context():
             self.assertEqual(GoogleIdentity.query.count(), 0)
             self.assertEqual(User.query.one().id, user_id)
-        self.password_login()
-        self.finish(self.start(), changes={'email': 'different@gmail.com'})
+        self.assertEqual(self.client.post(PREFIX + '/auth/google/link', base_url=BASE,
+                                         data={'password':'test-password-123'}).status_code, 400)
+        response = self.link(password='incorrect')
+        self.assertEqual(response.location, PREFIX + '/auth/google/link')
         with app.app_context():
             self.assertEqual(GoogleIdentity.query.count(), 0)
-        response = self.finish(self.start())
-        self.assertEqual(response.location, PREFIX + '/account')
+        response = self.link()
+        self.assertEqual(response.location, PREFIX + '/')
         with app.app_context():
             self.assertEqual(GoogleIdentity.query.one().user_id, user_id)
-            self.assertIsNotNone(User.query.one().password)
+            self.assertIsNone(User.query.one().password)
+            self.assertEqual(Jobs.query.one().id, job_id)
+            self.assertEqual(Jobs.query.one().user_id, user_id)
         self.logout()
         self.finish(self.start())
         with self.client.session_transaction(path=PREFIX + '/', base_url=BASE) as session:
@@ -320,21 +330,73 @@ class GoogleOAuthTests(unittest.TestCase):
         with app.app_context():
             self.assertEqual(User.query.count(), 0)
 
-    def test_unconfirmed_email_and_changed_login_session(self):
+    def test_unconfirmed_account_still_requires_both_proofs(self):
         self.local_user(confirmed=False)
         self.finish(self.start())
         self.assert_anonymous()
         with app.app_context():
             self.assertFalse(User.query.one().confirmed)
             self.assertEqual(GoogleIdentity.query.count(), 0)
-            User.query.one().confirmed = True
+        self.assertEqual(self.link().location, PREFIX + '/')
+        with app.app_context():
+            self.assertTrue(User.query.one().confirmed)
+            self.assertEqual(GoogleIdentity.query.count(), 1)
+
+    def test_password_and_reset_endpoints_are_removed(self):
+        self.local_user()
+        token = self.csrf()
+        for path in ('/login','/signup','/reset_password_request','/reset_password/token','/resend_confirmation','/confirm/token'):
+            response = self.client.post(PREFIX + path, base_url=BASE,
+                headers={'Referer':BASE + PREFIX + '/login'}, data={
+                    'csrf_token':token,'email':'person@gmail.com','password':'test-password-123',
+                    'confirm_password':'test-password-123'})
+            self.assertIn(response.status_code, (404,405), path)
+        for path in ('/reset_password_request','/reset_password/token','/resend_confirmation','/confirm/token','/unconfirmed'):
+            self.assertEqual(self.get(path).status_code, 404, path)
+        self.assert_anonymous()
+
+    def test_old_sessions_and_remember_cookies_cannot_bypass_google(self):
+        user_id = self.local_user()
+        with app.app_context():
+            db.session.add(GoogleIdentity(user_id=user_id,subject='google-person-1',email='person@gmail.com'))
             db.session.commit()
-        flow = self.start()
-        self.password_login()
-        self.finish(flow)
-        self.assertEqual(len(self.exchanges), 1)
+            from flask_login.utils import encode_cookie
+            remembered = encode_cookie(str(user_id))
+        with self.client.session_transaction(path=PREFIX + '/',base_url=BASE) as session:
+            session['_user_id'] = str(user_id)
+            session['_fresh'] = True
+        self.assertEqual(self.get('/TC').status_code, 302)
+        self.assert_anonymous()
+        self.client.set_cookie('tricleaver_remember', remembered, domain='kharmalab.cloud', path=PREFIX)
+        self.assertEqual(self.get('/TC').status_code, 302)
+        self.assertIsNone(self.client.get_cookie('tricleaver_remember',domain='kharmalab.cloud',path=PREFIX))
+        self.assertEqual(self.finish(self.start()).location, PREFIX + '/')
+        self.assertEqual(self.get('/account').status_code, 200)
+
+    def test_link_requires_pending_google_proof_expires_and_limits_guesses(self):
+        self.local_user()
+        self.assertEqual(self.get('/auth/google/link').location, PREFIX + '/login')
+        self.finish(self.start())
+        with self.client.session_transaction(path=PREFIX + '/',base_url=BASE) as session:
+            pending = session['_pending_google_link']
+            pending['expires_at'] = time.time() - 1
+            session['_pending_google_link'] = pending
+        self.assertEqual(self.get('/auth/google/link').location, PREFIX + '/login')
+        self.finish(self.start())
+        for _ in range(5):
+            self.link('wrong-password')
+        self.assertEqual(self.get('/auth/google/link').location, PREFIX + '/login')
+        self.assert_anonymous()
         with app.app_context():
             self.assertEqual(GoogleIdentity.query.count(), 0)
+        self.finish(self.start())
+        self.link()
+        self.logout()
+        response = self.client.post(PREFIX + '/auth/google/link', base_url=BASE,
+            headers={'Referer':BASE + PREFIX + '/login'},
+            data={'csrf_token':self.csrf(),'password':'test-password-123'})
+        self.assertEqual(response.location, PREFIX + '/login')
+        self.assert_anonymous()
 
     def test_concurrent_callbacks_consumed_once(self):
         flow = self.start()

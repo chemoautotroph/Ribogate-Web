@@ -26,12 +26,22 @@ login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
 login_manager.init_app(app)
 
-from .models import User
+from .models import User, GoogleIdentity
 
 @login_manager.user_loader
 def load_user(user_id):
-    # since the user_id is just the primary key of our user table, use it in the query for the user
-    return User.query.get(int(user_id))
+    try:
+        user_id = int(user_id)
+    except (TypeError, ValueError):
+        return None
+    subject = session.get('_google_subject')
+    identity = GoogleIdentity.query.filter_by(user_id=user_id, subject=subject).first() if subject else None
+    if identity is None:
+        # Old password and remember-me sessions must not bypass Google sign-in.
+        session.pop('_user_id', None)
+        session['_remember'] = 'clear'
+        return None
+    return db.session.get(User, user_id)
 
 #blueprint for auth routes
 from .auth import auth as auth_blueprint

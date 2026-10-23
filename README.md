@@ -46,7 +46,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start.ps1
 
 Setup downloads and verifies a [pinned portable CPython 3.9.19 runtime](python-manifest.json) (no existing Python, Conda or administrator installation needed), creates an isolated environment, installs [hash-locked packages](requirements.lock), downloads and verifies [the four exact customized ViennaRNA binaries](vienna-manifest.json) from Nick's commit-pinned upstream repository, initializes private configuration/database, and runs a small real TriCleaver job through result export and restart verification. No manual copying from the original machine is required.
 
-Open http://127.0.0.1:8000/signup, create your own account and log in. No account, password, email API key or historical user data is shipped. For email, add your own verified sender and provider key to the private `.env` as described in [INSTALL.md](INSTALL.md#4-email-provide-your-keys-privately). `.env` is loaded automatically; process environment variables override it.
+This branch now uses Google-only sign-in. Configure [Google OAuth](docs/GOOGLE_OAUTH.md),
+including a localhost callback for local development, then open http://127.0.0.1:8000/login.
+The Windows lock additionally needs `Authlib==1.9.1`; the Linux lock includes it. No account, password, email API key or historical user data is shipped. For email, add your own verified sender and provider key to the private `.env` as described in [INSTALL.md](INSTALL.md#4-email-provide-your-keys-privately). `.env` is loaded automatically; process environment variables override it.
 
 Normal runs retain the original 300-individual / 200-generation configuration. Setup verification uses 8 individuals / 4 generations, actual folding executables and a temporary database. The reproduced target is the **TriCleaver web workflow**; legacy TruthSeqEr source is included, with its unfinished presentation routes documented in the installation guide. Algorithm randomness means installation reproducibility is not a promise of identical design sequences on every run.
 
@@ -67,4 +69,8 @@ Original local data is not part of this repository. Back up databases separately
 
 ## Validation scope
 
-See [the recorded validation](docs/VALIDATION.md). A clean Python environment passed actual folding, signup/login, a queued quick TriCleaver run, results/structure data, Excel export and restart persistence. Email adapters, confirmation and password reset are verified with mocked delivery. Full-size scientific runs, actual inbox delivery, visual browser rendering, unfinished TS presentation routes, BLAST and production hosting are outside this acceptance test.
+See [the original Windows validation](docs/VALIDATION.md) for historical password-login checks.
+Current acceptance uses isolated Google identities for real folding, queued designs,
+results/structure data, Excel export and restart persistence. A separate OAuth suite
+verifies Google sign-in and one-time account migration with a mock provider and real
+signed tokens. Email adapter and job-notification checks mock delivery. Full-size scientific runs, actual inbox delivery, visual browser rendering, unfinished TS presentation routes, BLAST and production hosting are outside this acceptance test.

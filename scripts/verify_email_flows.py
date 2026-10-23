@@ -1,4 +1,4 @@
-"""Verify provider adapters, confirmation and reset links without sending email."""
+"""Verify notification adapters and job links without sending email."""
 import os
 from pathlib import Path
 import re
@@ -17,6 +17,7 @@ def main():
         # Isolate test data and override every credential before application imports.
         os.environ.update(RIBOGATE_DATA_DIR=directory, RIBOGATE_SECRET_KEY=secrets.token_hex(32),
                           RIBOGATE_BASE_PATH='/tricleaver', RIBOGATE_URL_SCHEME='http',
+                          RIBOGATE_GOOGLE_CLIENT_ID='', RIBOGATE_GOOGLE_CLIENT_SECRET='',
                           SENDGRID_API_KEY='test-placeholder', SMTP2GO_API_KEY='test-placeholder',
                           RIBOGATE_EMAIL_FROM='sender@example.invalid', RIBOGATE_EMAIL_SERVICE='sendgrid')
         from runserver import configure_app
@@ -42,30 +43,26 @@ def main():
                     pass
                 else:
                     raise AssertionError('Provider rejection was not reported')
-            client = app.test_client()
-            def post(path, data):
-                page=client.get('/tricleaver/login')
-                token=re.search(r'name="csrf_token"[^>]*value="([^"]+)"',page.text).group(1)
-                return client.post('/tricleaver'+path,data=dict(data,csrf_token=token))
-            password = secrets.token_urlsafe(24)
-            with patch('WS.auth.send_email') as outbox:
-                result = post('/signup', data={'email':'mailtest@example.invalid',
-                    'password':password, 'confirm_password':password})
-                assert result.status_code == 302 and outbox.call_count == 1
-                body = outbox.call_args.args[0]
-                confirm_url = re.search(r'href="([^"]+)"', body).group(1)
-                assert confirm_url.startswith('http://127.0.0.1:8000/tricleaver/confirm/')
-                assert client.get(urlsplit(confirm_url).path).status_code == 302
-                post('/reset_password_request', data={'email':'mailtest@example.invalid'})
-                reset_url = re.search(r'href="([^"]+)"', outbox.call_args.args[0]).group(1)
-                assert reset_url.startswith('http://127.0.0.1:8000/tricleaver/reset_password/')
-                replacement = secrets.token_urlsafe(24)
-                assert post(urlsplit(reset_url).path.removeprefix('/tricleaver'), data={'password':replacement,
-                    'confirm_password':replacement}).status_code == 302
-                assert post('/login', data={'email':'mailtest@example.invalid',
-                    'password':replacement}).status_code == 302
-                assert client.get('/tricleaver/TC').status_code == 200
-            print('Email adapters, rejection handling, confirmation and password reset PASSED; no email sent.')
+            from WS.models import User, Jobs, GoogleIdentity
+            from WS.scheduler import send_job_completion_email
+            with app.app_context(), patch('WS.scheduler.send_email') as outbox:
+                user=User(email='mailtest@example.invalid',name='Mail test',password=None,confirmed=True)
+                db.session.add(user)
+                db.session.flush()
+                db.session.add(GoogleIdentity(user_id=user.id,subject='mail-test-google',email=user.email))
+                job=Jobs(user_id=user.id,type='TC',status='Completed')
+                db.session.add(job)
+                db.session.commit()
+                send_job_completion_email(job)
+                assert outbox.call_count==1
+                body, subject, recipient=outbox.call_args.args
+                job_url=re.search(r'href="([^"]+)"',body).group(1)
+                assert job_url=='http://127.0.0.1:8000/tricleaver/TC/job_details?id='+str(job.id)
+                assert recipient==user.email
+            client=app.test_client()
+            for path in ('/reset_password_request','/resend_confirmation','/confirm/token','/reset_password/token'):
+                assert client.get('/tricleaver'+path).status_code==404
+            print('Notification adapters, rejection handling and mounted job links PASSED; no email sent.')
         finally:
             with app.app_context():
                 db.session.remove()

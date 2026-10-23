@@ -1,9 +1,0 @@
-{% extends "base.html" %}
-{% block content %}
-<h1>Resend confirmation email</h1>
-<form method="post" action="{{ url_for('auth.resend_confirmation') }}">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-  <label>Email <input type="email" name="email" value="{{ email }}" required></label>
-  <button type="submit">Resend confirmation</button>
-</form>
-{% endblock %}

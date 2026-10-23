@@ -43,7 +43,11 @@ From the repository directory:
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start.ps1
 ```
 
-Keep this terminal running. Visit **http://127.0.0.1:8000/signup**, create your own account, log in, and open **TriCleaver**. Email is disabled initially, so a newly registered account is immediately confirmed locally. There is no bundled default account or password.
+Keep this terminal running. This branch uses Google-only sign-in: install `Authlib==1.9.1`
+in the Windows venv and configure [Google OAuth](docs/GOOGLE_OAUTH.md) with the localhost
+callback `http://127.0.0.1:8000/auth/google/callback`. Visit
+**http://127.0.0.1:8000/login**, sign in with Google, and open **TriCleaver**.
+There is no bundled default account or password. Email keys are only for notifications.
 
 For a real design, enter WT/mutant sequences with the repeat region between two dashes, e.g. `upstream-GCGGCGGCG...-downstream`. The flanking regions must match and the mutant must have more repeats. Example sequences are included in `WS/TC/`. Continue to step 2, choose temperature, environment and cut-site motifs, then submit. The scheduler processes the queue automatically. When complete, open the job, inspect structures and download the Excel workbook.
 
@@ -117,7 +121,9 @@ Check configured keys without sending messages:
 
 A key restricted to sending may not be allowed to query the read-only endpoint; an endpoint permission failure alone does not prove the key is invalid. The script never prints keys, sender lists or account contents. Successful authentication is not an inbox-delivery test.
 
-Restart after changing `.env`. Email-enabled registrations require confirmation through the emailed link; password resets and job-completion notifications then use the selected provider. Existing locally confirmed accounts remain confirmed.
+Restart after changing `.env`. Job-completion notifications use the selected provider. Sign-in and account creation
+use Google and do not require email delivery. Local confirmation and password reset
+are no longer available on this branch.
 
 If accessing the app from another computer, replace `RIBOGATE_SERVER_NAME` with the hostname and port that recipients can actually reach. Set `RIBOGATE_HOST=0.0.0.0` only when LAN access is intended. `127.0.0.1` links work only on the server itself. For an HTTPS reverse proxy, set `RIBOGATE_URL_SCHEME=https` and use its external hostname in `RIBOGATE_SERVER_NAME`.
 
@@ -155,9 +161,9 @@ Run setup without `-SkipSmoke`, or rerun these checks manually:
 .\.venv\Scripts\python.exe scripts/smoke_test.py
 ```
 
-`smoke_test.py` starts its own server on a free localhost port with email disabled and an isolated temporary database. It exercises all four actual folding binaries, signup/login, the real CSRF-protected submission form, scheduler calculation, nonempty results, structure data/state switching, referenced JS/CSS URLs, XLSX download and persistence after server restart. It terminates its own server and writes `smoke-test-report.json` locally. The default job deadline is 600 seconds; use `--timeout 1200` on a slower machine.
+`smoke_test.py` starts its own server on a free localhost port with email disabled and an isolated temporary database. It exercises all four actual folding binaries, an isolated Google identity/session fixture, the real CSRF-protected submission form, scheduler calculation, nonempty results, structure data/state switching, referenced JS/CSS URLs, XLSX download and persistence after server restart. It terminates its own server and writes `smoke-test-report.json` locally. The default job deadline is 600 seconds; use `--timeout 1200` on a slower machine.
 
-`verify_email_flows.py` mocks provider calls and checks both adapters, rejection handling, confirmation URLs, confirmation, reset URLs and password reset. It never contacts a mail provider or sends mail. Real delivery requires the settings above and has not been asserted by these tests.
+`verify_email_flows.py` mocks provider calls and checks both adapters, rejection handling and mounted job-notification links. It never contacts a mail provider or sends mail. Real delivery requires the settings above and has not been asserted by these tests.
 
 See [`docs/VALIDATION.md`](docs/VALIDATION.md) for the tested environment and scope. Quick-mode end-to-end verification confirms the installation path; it does not validate the scientific quality of a full 300-by-200 evolutionary run or test browser rendering visually.
 
@@ -171,8 +177,8 @@ See [`docs/VALIDATION.md`](docs/VALIDATION.md) for the tested environment and sc
 | Missing DLL / executable will not start | Use Windows x64 and the exact four files; rerun setup/verification and inspect antivirus quarantine |
 | Missing executable / checksum mismatch | Rerun `install_vienna.py`; do not substitute stock ViennaRNA |
 | Login page works, job does not finish | Inspect `instance/server_logs.txt`; verify binaries and rerun the smoke test |
-| Failed or unconfirmed login | With email enabled, open the confirmation link; with email disabled, register a new local account |
-| Confirmation/reset links point to wrong machine | Correct server name/scheme, preserve secret key, restart |
+| Google sign-in unavailable | Configure both Google client settings and check the registered callback in [Google OAuth](docs/GOOGLE_OAUTH.md) |
+| Google callback points to wrong machine | Correct server name/scheme and the registered redirect URI, preserve secret key, restart |
 | CPU or memory pressure | Lower `RIBOGATE_NUM_PROCESSES`; full jobs can be expensive |
 | Port already in use | Change both `RIBOGATE_PORT` and `RIBOGATE_SERVER_NAME` |
 | Configuration edits seem ignored | Restart; inspect process environment overrides without publishing keys |

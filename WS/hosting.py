@@ -56,7 +56,7 @@ def configure_hosting(app):
             abort(404)
         if request.path == '/debug_novelty':
             abort(404)
-        if request.method == 'POST' and request.path in ('/login','/signup','/reset_password_request','/resend_confirmation','/auth/google/start'):
+        if request.method == 'POST' and request.path in ('/auth/google/start','/auth/google/link'):
             # Origin is loopback-only; the limit is deliberately aggregate per endpoint.
             history = attempts[request.path]
             now = time.monotonic()
@@ -103,9 +103,6 @@ def configure_hosting(app):
                 for field in ('wt_field','mutant_field'):
                     if len(request.form.get(field,'')) > app.config['MAX_SEQUENCE_LENGTH']:
                         abort(413, 'Sequence exceeds the service length limit.')
-        if not app.config['SEND_EMAILS'] and request.path in ('/reset_password_request','/resend_confirmation'):
-            flash('Email delivery is not configured yet. Password reset is currently unavailable.', 'login_fail')
-            return redirect(url_for('auth.login'))
 
     @app.after_request
     def headers(response):
@@ -119,4 +116,4 @@ def configure_hosting(app):
     @app.get('/healthz')
     def health():
         return {'service':'tricleaver','status':'ok','email_enabled':app.config['SEND_EMAILS'],
-                'google_login_enabled':app.config.get('GOOGLE_LOGIN_ENABLED', False)}
+                'google_login_enabled':app.config.get('GOOGLE_LOGIN_ENABLED', False), 'auth_mode':'google'}

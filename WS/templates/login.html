@@ -1,61 +1,17 @@
 {% extends "base.html" %}
-
 {% block content %}
-<body class="bg-light">
-    <div class="container body-content" role="main">
-        <h3 class="title">Login</h3>
-        <div class="box">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-            {% if messages[0][0] == 'login_fail' %}
-            <div class="alert alert-danger" role="alert"> {{ messages[0][1] }} </div>
-            {% elif messages[0][0] == 'signup_success' %}
-            <div class="alert alert-success" role="alert">{{ messages[0][1] }} </div>
-            {% endif %}
-            {% endif %}
-            {% endwith %}
-            <div class="card box-shadow my-3">
-                <div class="card-body">
-                    {% include "google_button.html" %}
-                    {% if config.GOOGLE_LOGIN_ENABLED %}<p>Or sign in with your email and password:</p>{% endif %}
-                    <form method="POST" action="{{ url_for('auth.login') }}">
-<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        {% if request.args.get('next') %}
-                        <input type="hidden" name="next" value="{{ request.args.get('next') }}">
-                        {% endif %}
-
-                        <div class="form-group">
-                            <div class="control">
-                                <input class="form-control" type="email" name="email" placeholder="Your Email" autofocus="">
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <div class="control">
-                                <input class="form-control" type="password" name="password" placeholder="Your Password">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="checkbox">
-                                <input type="checkbox">
-                                Remember me
-                            </label>
-                        </div>
-
-                        <div class="form-group mb-0">
-                            <p>
-                                <a href="{{ url_for('auth.reset_password_request') }}">Forgot your password?</a>
-                            </p>
-                            <p>
-                                <a href="{{ url_for('auth.signup') }}">Register as a new user?</a>
-                            </p>
-                        </div>
-
-                        <button class="btn btn-primary">Login</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-</body>
+<div class="container body-content" role="main">
+    <h3>Sign in to TriCleaver</h3>
+    {% for category, message in get_flashed_messages(with_categories=true) %}
+    <div class="alert {{ 'alert-success' if category == 'signup_success' else 'alert-danger' }}" role="alert">{{ message }}</div>
+    {% endfor %}
+    <div class="card box-shadow my-3"><div class="card-body">
+        {% if config.GOOGLE_LOGIN_ENABLED %}
+        <p>Use your Google account to create an account or access your designs.</p>
+        {% include "google_button.html" %}
+        {% else %}
+        <p>Google sign-in is temporarily unavailable. Please try again later.</p>
+        {% endif %}
+    </div></div>
+</div>
 {% endblock %}

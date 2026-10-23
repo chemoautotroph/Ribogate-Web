@@ -7,14 +7,7 @@
     {% endfor %}
     <div class="card my-3"><div class="card-body">
         <p><strong>Email:</strong> {{ current_user.email }}</p>
-        {% if identity %}
-        <p>Google sign-in is linked: {{ identity.email }}.</p>
-        {% elif config.GOOGLE_LOGIN_ENABLED %}
-        <p>Link Google to sign in to this account and keep your existing jobs. Choose the Google account with the same email address.</p>
-        {% include "google_button.html" %}
-        {% else %}
-        <p>Google sign-in is not currently available.</p>
-        {% endif %}
+        <p>Sign-in method: Google.</p>
     </div></div>
 </div>
 {% endblock %}
