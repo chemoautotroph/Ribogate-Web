@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Update TriCleaver from a locally verified offline package. iFold is untouched.
-set -euo pipefail
+set -Eeuo pipefail
 umask 077
 source_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 package="$source_dir/dist/linux-package"

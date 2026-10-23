@@ -22,9 +22,12 @@ https://kharmalab.cloud/tricleaver/auth/google/callback
 
 This server-side flow does not require Authorized JavaScript origins. It requests
 only `openid email profile`, without offline access or Google API permissions.
-If the Google project is in Testing, add the intended Google accounts under Audience
-→ Test users. Configure its public audience/publishing status before opening sign-in
-to other users. The existing Cloudflare `/tricleaver` route covers the callback.
+Use an External audience if Google accounts outside the lab's Workspace organization
+should be able to sign in. Google exempts requests limited to `openid email profile`
+from Testing-mode test-user restrictions; this application uses only those scopes.
+If additional scopes are introduced, review the project's test-user and publishing
+requirements. See [Google's audience rules](https://support.google.com/cloud/answer/15549945).
+The existing Cloudflare `/tricleaver` route covers the callback.
 
 Download the client's JSON to a private location outside the repository. Never put
 it, the client secret, authorization codes, ID tokens or access tokens in Git or chat.
